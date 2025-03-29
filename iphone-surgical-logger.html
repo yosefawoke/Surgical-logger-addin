@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Surgical Logger for iPhone</title>
+
+    <!-- Office JavaScript API -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+    
+    <!-- For more information on Fluent UI, visit https://developer.microsoft.com/fluentui -->
+    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css"/>
+
+    <!-- Template styles optimized for iPhone -->
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 10px;
+            margin: 0;
+            background-color: #f5f5f5;
+            -webkit-text-size-adjust: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #0078d4;
+            font-size: 22px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            background-color: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            color: #333;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px; /* Prevents iOS zoom on focus */
+            -webkit-appearance: none; /* Removes default iOS styling */
+            appearance: none;
+            background-color: #f9f9f9;
+        }
+        select {
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24'%3E%3Cpath fill='%23444' d='M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 30px;
+        }
+        button {
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            -webkit-appearance: none; /* Removes default iOS styling */
+            appearance: none;
+        }
+        button:active {
+            background-color: #106ebe;
+        }
+        .secondary-button {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .secondary-button:active {
+            background-color: #e0e0e0;
+        }
+        .attendant-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        }
+        .checkbox-item {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            width: 20px;
+            height: 20px;
+        }
+        .checkbox-item label {
+            margin-bottom: 0;
+            font-weight: normal;
+            font-size: 16px;
+        }
+        .nav-buttons {
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+        }
+        .section {
+            display: none;
+        }
+        .section.active {
+            display: block;
+        }
+        .progress-bar {
+            height: 6px;
+            background-color: #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            height: 100%;
+            background-color: #0078d4;
+            width: 25%; /* Will be updated via JS */
+            transition: width 0.3s ease;
+        }
+        .success-message {
+            text-align: center;
+            padding: 20px;
+            background-color: #e6f7ff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .success-icon {
+            font-size: 48px;
+            color: #0078d4;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body class="ms-font-m ms-Fabric">
+    <div id="app">
+        <h1>Surgical Logger</h1>
+        <div id="errorDisplay" style="color: red; margin-top: 10px; font-weight: bold;"></div>
+        <div class="progress-bar">
+            <div id="progressBar" class="progress-bar-inner"></div>
+        </div>
+        <div id="main-content">
+            <!-- Step 1: Medical ID, Age, Sex -->
+            <div id="section1" class="section active">
+                <h2>Patient Information</h2>
+                <div class="form-group">
+                    <label for="medicalId">Medical ID:</label>
+                    <input type="text" id="medicalId" name="medicalId" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="age">Age:</label>
+                    <input type="text" id="age" name="age" inputmode="numeric" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="sex">Sex:</label>
+                    <select id="sex" name="sex">
+                        <option value="">Select</option>
+                        <option value="M">M</option>
+                        <option value="F">F</option>
+                    </select>
+                </div>
+                <div class="nav-buttons">
+                    <button id="nextBtn1">Next</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Diagnosis and Procedure -->
+            <div id="section2" class="section">
+                <h2>Diagnosis & Procedure</h2>
+                <div class="form-group">
+                    <label for="diagnosis">Diagnosis:</label>
+                    <input type="text" id="diagnosis" name="diagnosis" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="procedure">Procedure:</label>
+                    <input type="text" id="procedure" name="procedure" autocomplete="off">
+                </div>
+                <div class="nav-buttons">
+                    <button id="nextBtn2">Next</button>
+                    <button id="prevBtn2" class="secondary-button">Back</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Attendants -->
+            <div id="section3" class="section">
+                <h2>Attendants</h2>
+                <div class="form-group">
+                    <label>Select Attendants:</label>
+                    <div id="attendantsContainer" class="attendant-container">
+                        <!-- Attendants will be added here -->
+                    </div>
+                </div>
+                <div class="nav-buttons">
+                    <button id="nextBtn3">Next</button>
+                    <button id="prevBtn3" class="secondary-button">Back</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Surgery Type and Role -->
+            <div id="section4" class="section">
+                <h2>Surgery Details</h2>
+                <div class="form-group">
+                    <label for="surgeryType">Surgery Type:</label>
+                    <select id="surgeryType" name="surgeryType">
+                        <option value="">Select</option>
+                        <option value="Elective">Elective</option>
+                        <option value="Emergency">Emergency</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role:</label>
+                    <input type="text" id="role" name="role" autocomplete="off">
+                </div>
+                <div class="nav-buttons">
+                    <button id="submitBtn">Submit</button>
+                    <button id="prevBtn4" class="secondary-button">Back</button>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <div id="success" class="section">
+                <div class="success-message">
+                    <div class="success-icon">✓</div>
+                    <h2>Entry Saved!</h2>
+                    <p>Your surgical log entry has been successfully saved.</p>
+                </div>
+                <div class="nav-buttons">
+                    <button id="newEntryBtn">Add Another Entry</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Globals
+        let currentSection = 1;
+        const totalSections = 4;
+        const attendants = [
+            "Attending Surgeon", "Assistant Surgeon", "Resident", "Medical Student",
+            "Scrub Nurse", "Circulating Nurse", "Anesthesiologist", "Anesthesia Resident",
+            "CRNA", "Other"
+        ];
+        const headers = ["Date", "Medical ID", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
+
+        // --- Initialization --- 
+        Office.onReady((info) => {
+            if (info.host === Office.HostType.Excel) {
+                console.log("Office is ready.");
+                // Wait for the DOM to be fully loaded before manipulating it
+                document.addEventListener('DOMContentLoaded', async () => {
+                    console.log("DOM content loaded.");
+                    try {
+                        populateAttendants();
+                        await ensureHeaders(); // Wait for headers to be checked/added
+                        console.log("Headers checked/ensured.");
+                        setupNavigation();
+                        console.log("Navigation setup complete.");
+                        updateProgressBar();
+                        showSection(currentSection); // Ensure initial section is shown
+                        console.log("Initial setup complete.");
+                    } catch (error) {
+                        console.error("Error during initialization:", error);
+                        // Optionally display an error message to the user in the UI
+                        document.getElementById('errorDisplay').textContent = 'Initialization failed: ' + error.message;
+                    }
+                });
+            }
+        });
+
+        // --- Helper Functions ---
+        function populateAttendants() {
+             console.log("Populating attendants...");
+            try {
+                const attendantsContainer = document.getElementById('attendantsContainer');
+                if (!attendantsContainer) {
+                    console.error("Attendants container not found!");
+                    return;
+                }
+                attendantsContainer.innerHTML = ''; // Clear existing content
+                attendants.forEach((attendant, index) => {
+                    const checkboxItem = document.createElement('div');
+                    checkboxItem.className = 'checkbox-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'attendant' + index;
+                    checkbox.name = 'attendants';
+                    checkbox.value = attendant;
+                    
+                    const label = document.createElement('label');
+                    label.setAttribute('for', 'attendant' + index);
+                    label.textContent = attendant;
+                    
+                    checkboxItem.appendChild(checkbox);
+                    checkboxItem.appendChild(label);
+                    attendantsContainer.appendChild(checkboxItem);
+                });
+                console.log("Attendants populated.");
+            } catch (error) {
+                console.error("Error populating attendants:", error);
+                throw error; // Re-throw to be caught by the main init catch block
+            }
+        }
+
+        function setupNavigation() {
+            console.log("Setting up navigation...");
+            try {
+                // --- Button Event Listeners ---
+                // Remove existing listeners first to prevent duplicates if code runs multiple times
+                const removeAndAddListener = (id, event, handler) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        // Clone the element to remove all listeners easily
+                        const newElement = element.cloneNode(true);
+                        element.parentNode.replaceChild(newElement, element);
+                        // Add the listener to the new element
+                        document.getElementById(id).addEventListener(event, handler);
+                    } else {
+                        console.warn(`Element with id '${id}' not found for listener.`);
+                    }
+                };
+
+                // Section 1 navigation
+                removeAndAddListener("nextBtn1", "click", function() {
+                    if (!validateSection1()) return;
+                    currentSection = 2;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+
+                // Section 2 navigation
+                removeAndAddListener("prevBtn2", "click", function() {
+                    currentSection = 1;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                removeAndAddListener("nextBtn2", "click", function() {
+                    if (!validateSection2()) return;
+                    currentSection = 3;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+
+                // Section 3 navigation
+                removeAndAddListener("prevBtn3", "click", function() {
+                    currentSection = 2;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                removeAndAddListener("nextBtn3", "click", function() {
+                    if (!validateSection3()) return;
+                    currentSection = 4;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+
+                // Section 4 navigation
+                removeAndAddListener("prevBtn4", "click", function() {
+                    currentSection = 3;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                removeAndAddListener("submitBtn", "click", function() {
+                    if (!validateSection4()) return;
+                    saveEntry(); // Call saveEntry on successful validation
+                });
+
+                // New entry button
+                removeAndAddListener("newEntryBtn", "click", function() {
+                    resetForm();
+                    currentSection = 1;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                console.log("Navigation event listeners added.");
+            } catch (error) {
+                console.error("Error setting up navigation:", error);
+                throw error;
+            }
+        }
+
+        // --- Validation Functions (separated for clarity) ---
+        function validateSection1() {
+            const medicalId = document.getElementById('medicalId').value.trim();
+            const age = document.getElementById('age').value.trim();
+            const sex = document.getElementById('sex').value;
+            if (!medicalId) { alert('Please enter a Medical ID'); return false; }
+            if (!age || isNaN(age)) { alert('Please enter a valid Age (numeric value)'); return false; }
+            if (!sex) { alert('Please select Sex'); return false; }
+            return true;
+        }
+
+        function validateSection2() {
+            const diagnosis = document.getElementById('diagnosis').value.trim();
+            const procedure = document.getElementById('procedure').value.trim();
+            if (!diagnosis) { alert('Please enter a Diagnosis'); return false; }
+            if (!procedure) { alert('Please enter a Procedure'); return false; }
+            return true;
+        }
+
+        function validateSection3() {
+            const checkboxes = document.querySelectorAll('input[name="attendants"]:checked');
+            if (checkboxes.length === 0) { alert('Please select at least one Attendant'); return false; }
+            return true;
+        }
+
+        function validateSection4() {
+            const surgeryType = document.getElementById('surgeryType').value;
+            const role = document.getElementById('role').value.trim();
+            if (!surgeryType) { alert('Please select Surgery Type'); return false; }
+            if (!role) { alert('Please enter a Role'); return false; }
+            return true;
+        }
+        
+        // --- UI Update Functions ---
+        function updateProgressBar() {
+            const progressPercent = (currentSection / totalSections) * 100;
+            const progressBar = document.getElementById('progressBar');
+            if(progressBar) progressBar.style.width = progressPercent + '%';
+            else console.warn("Progress bar element not found.");
+        }
+
+        function showSection(sectionNumber) {
+            console.log(`Showing section ${sectionNumber}`);
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            // Show the selected section
+            const activeSection = document.getElementById('section' + sectionNumber);
+            if(activeSection) activeSection.classList.add('active');
+            else console.warn(`Section ${sectionNumber} element not found.`);
+
+            // Show/Hide success message section
+            const successSection = document.getElementById('success');
+            const mainContent = document.getElementById('main-content');
+            if (sectionNumber === 'success') {
+                if(mainContent) mainContent.style.display = 'none';
+                if(successSection) successSection.style.display = 'block';
+            } else {
+                if(mainContent) mainContent.style.display = 'block';
+                if(successSection) successSection.style.display = 'none';
+            }
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        function resetForm() {
+            console.log("Resetting form...");
+            document.getElementById('loggerForm').reset();
+            // Uncheck all attendant checkboxes manually as reset might not cover dynamic elements
+            document.querySelectorAll('input[name="attendants"]').forEach(cb => cb.checked = false);
+            // Hide potential error messages
+            const errorDisplay = document.getElementById('errorDisplay');
+            if(errorDisplay) errorDisplay.textContent = '';
+             console.log("Form reset.");
+        }
+
+        // --- Excel Interaction ---
+        async function ensureHeaders() {
+            console.log("Ensuring headers in Excel...");
+            try {
+                await Excel.run(async (context) => {
+                    const sheet = context.workbook.worksheets.getActiveWorksheet();
+                    const range = sheet.getRange("A1:I1");
+                    range.load("values");
+                    await context.sync();
+
+                    const currentValues = range.values[0];
+                    let needsHeaders = headers.some((header, i) => currentValues[i] !== header);
+
+                    if (needsHeaders) {
+                        console.log("Adding headers...");
+                        range.values = [headers];
+                        range.format.font.bold = true;
+                        range.format.fill.color = "#D3D3D3"; // Light gray
+                        sheet.getUsedRange().format.autofitColumns();
+                    }
+
+                    sheet.getRange("A:I").format.wrapText = true; // Ensure wrapping
+                    await context.sync();
+                    console.log("Headers check complete.");
+                });
+            } catch (error) {
+                console.error("Excel Error in ensureHeaders:", error);
+                throw error; // Propagate error
+            }
+        }
+
+        async function saveEntry() {
+            console.log("Attempting to save entry...");
+            // Show loading indicator (optional)
+            // document.getElementById('loadingIndicator').style.display = 'block'; 
+            
+            // Gather data
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const medicalId = document.getElementById('medicalId').value.trim();
+            const age = document.getElementById('age').value.trim();
+            const sex = document.getElementById('sex').value;
+            const diagnosis = document.getElementById('diagnosis').value.trim();
+            const procedure = document.getElementById('procedure').value.trim();
+            const selectedAttendants = Array.from(document.querySelectorAll('input[name="attendants"]:checked')).map(cb => cb.value).join('; '); // Semicolon separated
+            const surgeryType = document.getElementById('surgeryType').value;
+            const role = document.getElementById('role').value.trim();
+
+            const rowData = [dateStr, medicalId, age, sex, diagnosis, procedure, selectedAttendants, surgeryType, role];
+            console.log("Row data:", rowData);
+
+            try {
+                await Excel.run(async (context) => {
+                    const sheet = context.workbook.worksheets.getActiveWorksheet();
+                    // Find the next empty row in column A (assuming Medical ID is a good indicator)
+                    const usedRange = sheet.getUsedRange(true); // true = only visible cells
+                    usedRange.load("rowCount");
+                    await context.sync();
+                    
+                    // Determine the next row index (add 1 to the last used row index)
+                    // Handle case where sheet might be empty or only has headers
+                    let nextRowIndex = 1; // Default to row 2 if only headers
+                    if (usedRange && usedRange.rowCount > 1) {
+                         // Find the first empty cell in column A starting from A2
+                        const checkRange = sheet.getRange("A2:A" + (usedRange.rowCount + 10)); // Check a bit beyond used range
+                        const formulas = checkRange.load("formulas");
+                        await context.sync();
+                        
+                        nextRowIndex = 1; // Start checking from index 1 (which maps to row 2)
+                        while (nextRowIndex < formulas.formulas.length) {
+                             if (formulas.formulas[nextRowIndex][0] === null || formulas.formulas[nextRowIndex][0] === "") {
+                                break; // Found the first empty cell
+                            }
+                            nextRowIndex++;
+                        }
+                        nextRowIndex += 1; // Adjust index to actual row number (base 1) relative to sheet start (A1)
+
+                    } else if (usedRange && usedRange.rowCount === 1) {
+                         nextRowIndex = 1; // Headers exist, next row is 2 (index 1)
+                    } else {
+                        nextRowIndex = 0; // Sheet is empty, next row is 1 (index 0)
+                    }
+                    
+                    // Use 1-based index for getRow
+                    const targetRow = nextRowIndex + 1;
+                    console.log(`Target row for new entry: ${targetRow}`);
+                    
+                    const range = sheet.getRangeByIndexes(targetRow -1 , 0, 1, headers.length);
+                    range.values = [rowData];
+                    range.format.autofitRows(); // Autofit the new row height
+                    
+                    await context.sync();
+                    console.log("Entry saved successfully to row", targetRow);
+
+                    // Show success message and hide form
+                    showSection('success'); 
+                });
+            } catch (error) {
+                console.error("Excel Error saving entry:", error);
+                 // Display error to user
+                 const errorDisplay = document.getElementById('errorDisplay');
+                 if(errorDisplay) errorDisplay.textContent = 'Error saving entry: ' + error.message;
+            } finally {
+                 // Hide loading indicator (optional)
+                 // document.getElementById('loadingIndicator').style.display = 'none'; 
+            }
+        }
+
+    </script>
+</body>
+</html>
