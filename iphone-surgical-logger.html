@@ -156,6 +156,7 @@
 <body class="ms-font-m ms-Fabric">
     <div id="app">
         <h1>Surgical Logger</h1>
+        <div id="errorDisplay" style="color: red; margin-top: 10px; font-weight: bold;"></div>
         <div class="progress-bar">
             <div id="progressBar" class="progress-bar-inner"></div>
         </div>
@@ -251,295 +252,340 @@
         </div>
     </div>
 
-    <script type="text/javascript">
-        // The initialize function must be run each time a new page is loaded
-        Office.onReady(function(info) {
+    <script>
+        // Globals
+        let currentSection = 1;
+        const totalSections = 4;
+        const attendants = [
+            "Attending Surgeon", "Assistant Surgeon", "Resident", "Medical Student",
+            "Scrub Nurse", "Circulating Nurse", "Anesthesiologist", "Anesthesia Resident",
+            "CRNA", "Other"
+        ];
+        const headers = ["Date", "Medical ID", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
+
+        // --- Initialization --- 
+        Office.onReady((info) => {
             if (info.host === Office.HostType.Excel) {
-                // Initialize the application
-                initializeApp();
+                console.log("Office is ready.");
+                // Wait for the DOM to be fully loaded before manipulating it
+                document.addEventListener('DOMContentLoaded', async () => {
+                    console.log("DOM content loaded.");
+                    try {
+                        populateAttendants();
+                        await ensureHeaders(); // Wait for headers to be checked/added
+                        console.log("Headers checked/ensured.");
+                        setupNavigation();
+                        console.log("Navigation setup complete.");
+                        updateProgressBar();
+                        showSection(currentSection); // Ensure initial section is shown
+                        console.log("Initial setup complete.");
+                    } catch (error) {
+                        console.error("Error during initialization:", error);
+                        // Optionally display an error message to the user in the UI
+                        document.getElementById('errorDisplay').textContent = 'Initialization failed: ' + error.message;
+                    }
+                });
             }
         });
 
-        const attendants = [
-            "Dr Aklilu", "Dr Menarg", "Dr Mengist", "Dr Mequanint", "Dr Misganaw",
-            "Dr Amare", "Dr Melese", "Dr Samrawit", "Dr Mesenbet", "Dr Abel",
-            "Dr Leaynadis", "Dr Solomon", "Dr Sintaye", "Dr Cheru", "Dr Fasil",
-            "Dr Meron", "Dr Adane"
-        ];
-
-        let currentSection = 1;
-        const totalSections = 4;
-
-        function initializeApp() {
-            // Add attendants to the form
-            const attendantsContainer = document.getElementById('attendantsContainer');
-            attendants.forEach((attendant, index) => {
-                const checkboxItem = document.createElement('div');
-                checkboxItem.className = 'checkbox-item';
-                
-                const checkbox = document.createElement('input');
-                checkbox.type = 'checkbox';
-                checkbox.id = 'attendant' + index;
-                checkbox.name = 'attendants';
-                checkbox.value = attendant;
-                
-                const label = document.createElement('label');
-                label.setAttribute('for', 'attendant' + index);
-                label.textContent = attendant;
-                
-                checkboxItem.appendChild(checkbox);
-                checkboxItem.appendChild(label);
-                attendantsContainer.appendChild(checkboxItem);
-            });
-
-            // Check if the headers exist, if not create them
-            ensureHeaders();
-
-            // Set up navigation
-            setupNavigation();
-            
-            // Update progress bar
-            updateProgressBar();
+        // --- Helper Functions ---
+        function populateAttendants() {
+             console.log("Populating attendants...");
+            try {
+                const attendantsContainer = document.getElementById('attendantsContainer');
+                if (!attendantsContainer) {
+                    console.error("Attendants container not found!");
+                    return;
+                }
+                attendantsContainer.innerHTML = ''; // Clear existing content
+                attendants.forEach((attendant, index) => {
+                    const checkboxItem = document.createElement('div');
+                    checkboxItem.className = 'checkbox-item';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.id = 'attendant' + index;
+                    checkbox.name = 'attendants';
+                    checkbox.value = attendant;
+                    
+                    const label = document.createElement('label');
+                    label.setAttribute('for', 'attendant' + index);
+                    label.textContent = attendant;
+                    
+                    checkboxItem.appendChild(checkbox);
+                    checkboxItem.appendChild(label);
+                    attendantsContainer.appendChild(checkboxItem);
+                });
+                console.log("Attendants populated.");
+            } catch (error) {
+                console.error("Error populating attendants:", error);
+                throw error; // Re-throw to be caught by the main init catch block
+            }
         }
 
         function setupNavigation() {
-            // Section 1 navigation
-            document.getElementById("nextBtn1").addEventListener("click", function() {
-                // Validate input
-                const medicalId = document.getElementById('medicalId').value.trim();
-                const age = document.getElementById('age').value.trim();
-                const sex = document.getElementById('sex').value;
+            console.log("Setting up navigation...");
+            try {
+                // --- Button Event Listeners ---
+                // Remove existing listeners first to prevent duplicates if code runs multiple times
+                const removeAndAddListener = (id, event, handler) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        // Clone the element to remove all listeners easily
+                        const newElement = element.cloneNode(true);
+                        element.parentNode.replaceChild(newElement, element);
+                        // Add the listener to the new element
+                        document.getElementById(id).addEventListener(event, handler);
+                    } else {
+                        console.warn(`Element with id '${id}' not found for listener.`);
+                    }
+                };
 
-                if (!medicalId) {
-                    alert('Please enter a Medical ID');
-                    return;
-                }
-                if (!age || isNaN(age)) {
-                    alert('Please enter a valid Age (numeric value)');
-                    return;
-                }
-                if (!sex) {
-                    alert('Please select Sex');
-                    return;
-                }
+                // Section 1 navigation
+                removeAndAddListener("nextBtn1", "click", function() {
+                    if (!validateSection1()) return;
+                    currentSection = 2;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
 
-                currentSection = 2;
-                showSection(2);
-                updateProgressBar();
-            });
+                // Section 2 navigation
+                removeAndAddListener("prevBtn2", "click", function() {
+                    currentSection = 1;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                removeAndAddListener("nextBtn2", "click", function() {
+                    if (!validateSection2()) return;
+                    currentSection = 3;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
 
-            // Section 2 navigation
-            document.getElementById("prevBtn2").addEventListener("click", function() {
-                currentSection = 1;
-                showSection(1);
-                updateProgressBar();
-            });
-            document.getElementById("nextBtn2").addEventListener("click", function() {
-                // Validate input
-                const diagnosis = document.getElementById('diagnosis').value.trim();
-                const procedure = document.getElementById('procedure').value.trim();
+                // Section 3 navigation
+                removeAndAddListener("prevBtn3", "click", function() {
+                    currentSection = 2;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                removeAndAddListener("nextBtn3", "click", function() {
+                    if (!validateSection3()) return;
+                    currentSection = 4;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
 
-                if (!diagnosis) {
-                    alert('Please enter a Diagnosis');
-                    return;
-                }
-                if (!procedure) {
-                    alert('Please enter a Procedure');
-                    return;
-                }
+                // Section 4 navigation
+                removeAndAddListener("prevBtn4", "click", function() {
+                    currentSection = 3;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                removeAndAddListener("submitBtn", "click", function() {
+                    if (!validateSection4()) return;
+                    saveEntry(); // Call saveEntry on successful validation
+                });
 
-                currentSection = 3;
-                showSection(3);
-                updateProgressBar();
-            });
-
-            // Section 3 navigation
-            document.getElementById("prevBtn3").addEventListener("click", function() {
-                currentSection = 2;
-                showSection(2);
-                updateProgressBar();
-            });
-            document.getElementById("nextBtn3").addEventListener("click", function() {
-                // Validate at least one attendant is selected
-                const checkboxes = document.querySelectorAll('input[name="attendants"]:checked');
-                if (checkboxes.length === 0) {
-                    alert('Please select at least one Attendant');
-                    return;
-                }
-
-                currentSection = 4;
-                showSection(4);
-                updateProgressBar();
-            });
-
-            // Section 4 navigation
-            document.getElementById("prevBtn4").addEventListener("click", function() {
-                currentSection = 3;
-                showSection(3);
-                updateProgressBar();
-            });
-            document.getElementById("submitBtn").addEventListener("click", function() {
-                // Validate input
-                const surgeryType = document.getElementById('surgeryType').value;
-                const role = document.getElementById('role').value.trim();
-
-                if (!surgeryType) {
-                    alert('Please select Surgery Type');
-                    return;
-                }
-                if (!role) {
-                    alert('Please enter a Role');
-                    return;
-                }
-
-                // Save the entry
-                saveEntry();
-            });
-
-            // New entry button
-            document.getElementById("newEntryBtn").addEventListener("click", function() {
-                resetForm();
-                currentSection = 1;
-                showSection(1);
-                updateProgressBar();
-            });
+                // New entry button
+                removeAndAddListener("newEntryBtn", "click", function() {
+                    resetForm();
+                    currentSection = 1;
+                    showSection(currentSection);
+                    updateProgressBar();
+                });
+                console.log("Navigation event listeners added.");
+            } catch (error) {
+                console.error("Error setting up navigation:", error);
+                throw error;
+            }
         }
 
+        // --- Validation Functions (separated for clarity) ---
+        function validateSection1() {
+            const medicalId = document.getElementById('medicalId').value.trim();
+            const age = document.getElementById('age').value.trim();
+            const sex = document.getElementById('sex').value;
+            if (!medicalId) { alert('Please enter a Medical ID'); return false; }
+            if (!age || isNaN(age)) { alert('Please enter a valid Age (numeric value)'); return false; }
+            if (!sex) { alert('Please select Sex'); return false; }
+            return true;
+        }
+
+        function validateSection2() {
+            const diagnosis = document.getElementById('diagnosis').value.trim();
+            const procedure = document.getElementById('procedure').value.trim();
+            if (!diagnosis) { alert('Please enter a Diagnosis'); return false; }
+            if (!procedure) { alert('Please enter a Procedure'); return false; }
+            return true;
+        }
+
+        function validateSection3() {
+            const checkboxes = document.querySelectorAll('input[name="attendants"]:checked');
+            if (checkboxes.length === 0) { alert('Please select at least one Attendant'); return false; }
+            return true;
+        }
+
+        function validateSection4() {
+            const surgeryType = document.getElementById('surgeryType').value;
+            const role = document.getElementById('role').value.trim();
+            if (!surgeryType) { alert('Please select Surgery Type'); return false; }
+            if (!role) { alert('Please enter a Role'); return false; }
+            return true;
+        }
+        
+        // --- UI Update Functions ---
         function updateProgressBar() {
             const progressPercent = (currentSection / totalSections) * 100;
-            document.getElementById('progressBar').style.width = progressPercent + '%';
+            const progressBar = document.getElementById('progressBar');
+            if(progressBar) progressBar.style.width = progressPercent + '%';
+            else console.warn("Progress bar element not found.");
         }
 
         function showSection(sectionNumber) {
+            console.log(`Showing section ${sectionNumber}`);
             // Hide all sections
-            const sections = document.querySelectorAll('.section');
-            sections.forEach(section => {
+            document.querySelectorAll('.section').forEach(section => {
                 section.classList.remove('active');
             });
-
             // Show the selected section
-            document.getElementById('section' + sectionNumber).classList.add('active');
+            const activeSection = document.getElementById('section' + sectionNumber);
+            if(activeSection) activeSection.classList.add('active');
+            else console.warn(`Section ${sectionNumber} element not found.`);
+
+            // Show/Hide success message section
+            const successSection = document.getElementById('success');
+            const mainContent = document.getElementById('main-content');
+            if (sectionNumber === 'success') {
+                if(mainContent) mainContent.style.display = 'none';
+                if(successSection) successSection.style.display = 'block';
+            } else {
+                if(mainContent) mainContent.style.display = 'block';
+                if(successSection) successSection.style.display = 'none';
+            }
             
             // Scroll to top
             window.scrollTo(0, 0);
         }
 
-        function ensureHeaders() {
-            return Excel.run(function(context) {
-                const sheet = context.workbook.worksheets.getActiveWorksheet();
-                const headers = ["Date", "Medical ID", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
-                
-                // Add headers if they don't exist
-                const range = sheet.getRange("A1:I1");
-                range.load("values");
-                
-                return context.sync().then(function() {
+        function resetForm() {
+            console.log("Resetting form...");
+            document.getElementById('loggerForm').reset();
+            // Uncheck all attendant checkboxes manually as reset might not cover dynamic elements
+            document.querySelectorAll('input[name="attendants"]').forEach(cb => cb.checked = false);
+            // Hide potential error messages
+            const errorDisplay = document.getElementById('errorDisplay');
+            if(errorDisplay) errorDisplay.textContent = '';
+             console.log("Form reset.");
+        }
+
+        // --- Excel Interaction ---
+        async function ensureHeaders() {
+            console.log("Ensuring headers in Excel...");
+            try {
+                await Excel.run(async (context) => {
+                    const sheet = context.workbook.worksheets.getActiveWorksheet();
+                    const range = sheet.getRange("A1:I1");
+                    range.load("values");
+                    await context.sync();
+
                     const currentValues = range.values[0];
-                    let needsHeaders = false;
-                    
-                    // Check if headers already exist
-                    for (let i = 0; i < headers.length; i++) {
-                        if (currentValues[i] !== headers[i]) {
-                            needsHeaders = true;
-                            break;
-                        }
-                    }
-                    
+                    let needsHeaders = headers.some((header, i) => currentValues[i] !== header);
+
                     if (needsHeaders) {
-                        // Add headers
+                        console.log("Adding headers...");
                         range.values = [headers];
                         range.format.font.bold = true;
                         range.format.fill.color = "#D3D3D3"; // Light gray
-                        
-                        // Auto-fit columns
                         sheet.getUsedRange().format.autofitColumns();
                     }
-                    
-                    // Set up page layout
-                    sheet.pageLayout.orientation = Excel.PageOrientation.landscape;
-                    sheet.pageLayout.fitToPagesTall = false;
-                    sheet.pageLayout.fitToPagesWide = 1;
-                    
-                    // Enable text wrapping for all columns
-                    sheet.getRange("A:I").format.wrapText = true;
+
+                    sheet.getRange("A:I").format.wrapText = true; // Ensure wrapping
+                    await context.sync();
+                    console.log("Headers check complete.");
                 });
-            }).catch(function(error) {
-                console.log("Error: " + error);
-            });
+            } catch (error) {
+                console.error("Excel Error in ensureHeaders:", error);
+                throw error; // Propagate error
+            }
         }
 
-        function resetForm() {
-            // Reset all form fields
-            document.getElementById('medicalId').value = '';
-            document.getElementById('age').value = '';
-            document.getElementById('sex').value = '';
-            document.getElementById('diagnosis').value = '';
-            document.getElementById('procedure').value = '';
-            document.getElementById('surgeryType').value = '';
-            document.getElementById('role').value = '';
+        async function saveEntry() {
+            console.log("Attempting to save entry...");
+            // Show loading indicator (optional)
+            // document.getElementById('loadingIndicator').style.display = 'block'; 
             
-            // Uncheck all attendants
-            const checkboxes = document.querySelectorAll('input[name="attendants"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
+            // Gather data
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            const medicalId = document.getElementById('medicalId').value.trim();
+            const age = document.getElementById('age').value.trim();
+            const sex = document.getElementById('sex').value;
+            const diagnosis = document.getElementById('diagnosis').value.trim();
+            const procedure = document.getElementById('procedure').value.trim();
+            const selectedAttendants = Array.from(document.querySelectorAll('input[name="attendants"]:checked')).map(cb => cb.value).join('; '); // Semicolon separated
+            const surgeryType = document.getElementById('surgeryType').value;
+            const role = document.getElementById('role').value.trim();
+
+            const rowData = [dateStr, medicalId, age, sex, diagnosis, procedure, selectedAttendants, surgeryType, role];
+            console.log("Row data:", rowData);
+
+            try {
+                await Excel.run(async (context) => {
+                    const sheet = context.workbook.worksheets.getActiveWorksheet();
+                    // Find the next empty row in column A (assuming Medical ID is a good indicator)
+                    const usedRange = sheet.getUsedRange(true); // true = only visible cells
+                    usedRange.load("rowCount");
+                    await context.sync();
+                    
+                    // Determine the next row index (add 1 to the last used row index)
+                    // Handle case where sheet might be empty or only has headers
+                    let nextRowIndex = 1; // Default to row 2 if only headers
+                    if (usedRange && usedRange.rowCount > 1) {
+                         // Find the first empty cell in column A starting from A2
+                        const checkRange = sheet.getRange("A2:A" + (usedRange.rowCount + 10)); // Check a bit beyond used range
+                        const formulas = checkRange.load("formulas");
+                        await context.sync();
+                        
+                        nextRowIndex = 1; // Start checking from index 1 (which maps to row 2)
+                        while (nextRowIndex < formulas.formulas.length) {
+                             if (formulas.formulas[nextRowIndex][0] === null || formulas.formulas[nextRowIndex][0] === "") {
+                                break; // Found the first empty cell
+                            }
+                            nextRowIndex++;
+                        }
+                        nextRowIndex += 1; // Adjust index to actual row number (base 1) relative to sheet start (A1)
+
+                    } else if (usedRange && usedRange.rowCount === 1) {
+                         nextRowIndex = 1; // Headers exist, next row is 2 (index 1)
+                    } else {
+                        nextRowIndex = 0; // Sheet is empty, next row is 1 (index 0)
+                    }
+                    
+                    // Use 1-based index for getRow
+                    const targetRow = nextRowIndex + 1;
+                    console.log(`Target row for new entry: ${targetRow}`);
+                    
+                    const range = sheet.getRangeByIndexes(targetRow -1 , 0, 1, headers.length);
+                    range.values = [rowData];
+                    range.format.autofitRows(); // Autofit the new row height
+                    
+                    await context.sync();
+                    console.log("Entry saved successfully to row", targetRow);
+
+                    // Show success message and hide form
+                    showSection('success'); 
+                });
+            } catch (error) {
+                console.error("Excel Error saving entry:", error);
+                 // Display error to user
+                 const errorDisplay = document.getElementById('errorDisplay');
+                 if(errorDisplay) errorDisplay.textContent = 'Error saving entry: ' + error.message;
+            } finally {
+                 // Hide loading indicator (optional)
+                 // document.getElementById('loadingIndicator').style.display = 'none'; 
+            }
         }
 
-        function saveEntry() {
-            Excel.run(function(context) {
-                const sheet = context.workbook.worksheets.getActiveWorksheet();
-                
-                // Find the next empty row
-                const range = sheet.getUsedRange();
-                range.load("rowCount");
-                
-                return context.sync().then(function() {
-                    const nextRow = range.rowCount + 1;
-                    
-                    // Get the current date
-                    const today = new Date();
-                    const dateString = today.toLocaleDateString();
-                    
-                    // Get form values
-                    const medicalId = document.getElementById('medicalId').value.trim();
-                    const age = document.getElementById('age').value.trim();
-                    const sex = document.getElementById('sex').value;
-                    const diagnosis = document.getElementById('diagnosis').value.trim();
-                    const procedure = document.getElementById('procedure').value.trim();
-                    const surgeryType = document.getElementById('surgeryType').value;
-                    const role = document.getElementById('role').value.trim();
-                    
-                    // Get selected attendants
-                    const selectedAttendants = [];
-                    const checkboxes = document.querySelectorAll('input[name="attendants"]:checked');
-                    checkboxes.forEach(checkbox => {
-                        selectedAttendants.push(checkbox.value);
-                    });
-                    const attendantsString = selectedAttendants.join(", ");
-                    
-                    // Add the row
-                    const newRow = [dateString, medicalId, age, sex, diagnosis, procedure, attendantsString, surgeryType, role];
-                    sheet.getRange(`A${nextRow}:I${nextRow}`).values = [newRow];
-                    
-                    // Format the new row
-                    sheet.getRange(`A${nextRow}:I${nextRow}`).format.borders.getItem('EdgeBottom').style = 'Continuous';
-                    sheet.getRange(`A${nextRow}:I${nextRow}`).format.borders.getItem('EdgeTop').style = 'Continuous';
-                    sheet.getRange(`A${nextRow}:I${nextRow}`).format.borders.getItem('EdgeLeft').style = 'Continuous';
-                    sheet.getRange(`A${nextRow}:I${nextRow}`).format.borders.getItem('EdgeRight').style = 'Continuous';
-                    sheet.getRange(`A${nextRow}:I${nextRow}`).format.wrapText = true;
-                    
-                    // Auto-fit layout
-                    sheet.getUsedRange().format.autofitColumns();
-                    sheet.getUsedRange().format.autofitRows();
-                    
-                    // Show success message
-                    showSection('success');
-                });
-            }).catch(function(error) {
-                console.log("Error: " + error);
-                alert("Error saving entry: " + error);
-            });
-        }
     </script>
 </body>
 </html>
