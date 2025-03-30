@@ -4,29 +4,29 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Surgical Log - Test</title>
+    <title>Surgical Log - Test 2</title>
 
-    <!-- Test Alert 0a: Does *any* inline JS run BEFORE office.js? -->
-    <script>alert('Inline Script Test 0a: Before Office.js');</script>
+    <!-- Test Alert 0a: Does *any* inline JS run? -->
+    <script>alert('Inline Script Test 0a');</script>
 
-    <!-- Office JavaScript API -->
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <!-- Office JavaScript API (TEMPORARILY COMMENTED OUT) -->
+    <!-- <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script> -->
 
-     <!-- Test Alert 0b: Does *any* inline JS run AFTER office.js? -->
-    <script>alert('Inline Script Test 0b: After Office.js. Office object exists? ' + (typeof Office !== 'undefined'));</script>
+     <!-- Test Alert 0b: Does *any* inline JS run AFTER where office.js would be? -->
+    <script>alert('Inline Script Test 0b');</script>
 
     <!-- App specific CSS file (Optional for this test) -->
     <!-- <link rel="stylesheet" href="taskpane.css" type="text/css" /> -->
 </head>
 <body>
-    <h1>Minimal Test Page</h1>
+    <h1>Minimal Test Page (No Office.js)</h1>
 
-    <p>Attempting to load add-in...</p>
+    <p>Attempting to load scripts...</p>
 
     <!-- Keep status div for taskpane.js -->
     <div id="status">Loading...</div>
 
-    <!-- App specific JavaScript file -->
+    <!-- App specific JavaScript file (Still using the ultra-simplified version) -->
     <script type="text/javascript" src="taskpane.js"></script>
 </body>
 </html> 
