@@ -6,33 +6,64 @@
     const headers = ["Date", "Age", "Sex", "MRN", "Diagnosis", "Procedure", "Attendant(s)", "Role", "Surgery Type"];
 
     Office.onReady(function(info){
+        console.log("Office.onReady fired."); // Log: Check if Office is ready
+
         // Check that we are running in Excel
         if (info.host === Office.HostType.Excel) {
-            // Ensure the DOM is fully loaded before interacting with it
-            document.addEventListener('DOMContentLoaded', function() {
-                // Assign event listeners
-                document.getElementById('submit-button').addEventListener('click', logData);
-                const formElements = document.querySelectorAll('#log-form input, #log-form textarea, #log-form input[type=checkbox]');
-                formElements.forEach(el => el.addEventListener('input', clearStatus)); // Clear status on any input
+            console.log("Host is Excel. Proceeding with initialization."); // Log: Check host
+             // Attempt to initialize the add-in immediately after Office is ready
+             // Wrap the entire initialization in a try/catch
+            try {
+                 // Assign event listeners FIRST
+                 const submitButton = document.getElementById('submit-button');
+                 if (!submitButton) throw new Error("Submit button not found.");
+                 submitButton.addEventListener('click', logData);
+                 console.log("Submit button listener attached.");
 
-                // Populate the form elements
-                try {
-                    populateAttendants();
-                    setCurrentDate();
-                    showStatus("Add-in loaded successfully.", false); // Initial success message
-                } catch (error) {
-                    showStatus("Error initializing form: " + error.message, true);
-                    console.error("Initialization error:", error);
-                }
+                 const formElements = document.querySelectorAll('#log-form input, #log-form textarea, #log-form input[type=checkbox]');
+                 if (formElements.length === 0) console.warn("No form elements found for input listeners."); // Log: Warn if no elements found
+                 formElements.forEach(el => el.addEventListener('input', clearStatus)); // Clear status on any input
+                 console.log("Input listeners attached to form elements.");
 
-                 // Ensure headers are present in the sheet
-                 ensureHeaders().catch(handleError); // Call async function
+                 // Populate the form elements
+                 console.log("Attempting to populate attendants...");
+                 populateAttendants(); // This function now throws an error if its container isn't found
+                 console.log("Attempting to set current date...");
+                 setCurrentDate(); // This function now throws an error if its input isn't found
 
-            });
+                 // Ensure headers are present in the sheet (async operation)
+                  console.log("Attempting to ensure headers...");
+                 ensureHeaders()
+                    .then(() => {
+                         console.log("EnsureHeaders completed successfully (or headers already existed).");
+                         showStatus("Add-in loaded and sheet headers checked.", false); // Update status after async header check completes
+                    })
+                    .catch(error => {
+                        // Catch errors specifically from ensureHeaders
+                        console.error("Error during ensureHeaders:", error);
+                        handleError(error); // Use the central handler
+                    });
+
+            } catch (error) {
+                 // Catch synchronous errors during initialization (e.g., element not found)
+                 console.error("Initialization error (sync):", error);
+                 showStatus("Error initializing add-in: " + error.message, true); // Show sync init errors
+            }
+
         } else {
-             document.addEventListener('DOMContentLoaded', function() {
-                showStatus("This add-in only works in Excel.", true);
-            });
+             // Handle non-Excel hosts
+             console.warn("Host is not Excel:", info.host);
+             // Try setting status even if DOMContentLoaded isn't guaranteed here
+             const statusDiv = document.getElementById('status');
+             if (statusDiv) {
+                 statusDiv.textContent = "This add-in only works in Excel.";
+                 statusDiv.style.color = 'red';
+             } else {
+                // Fallback if DOM isn't ready - less likely now but good practice
+                 document.addEventListener('DOMContentLoaded', function() {
+                    showStatus("This add-in only works in Excel.", true);
+                });
+             }
         }
     });
 
@@ -43,10 +74,11 @@
     ];
 
     function populateAttendants() {
-        console.log("Populating attendants..."); // Debug log
+        console.log("Executing populateAttendants..."); // Debug log
         const listDiv = document.getElementById('attendants-list');
         if (!listDiv) {
-            throw new Error("Attendants list container not found.");
+            console.error("Attendants list container (#attendants-list) not found in HTML."); // Specific log
+            throw new Error("Attendants list container not found."); // Crucial error
         }
         listDiv.innerHTML = ''; // Clear existing
 
@@ -73,14 +105,15 @@
             div.appendChild(checkboxContainer); // Append styled container
             listDiv.appendChild(div);
         });
-         console.log("Attendants populated."); // Debug log
+         console.log("Attendants populated successfully."); // Debug log
     }
 
     function setCurrentDate() {
-        console.log("Setting current date..."); // Debug log
+        console.log("Executing setCurrentDate..."); // Debug log
         const dateInput = document.getElementById('date');
          if (!dateInput) {
-            throw new Error("Date input field not found.");
+             console.error("Date input field (#date) not found in HTML."); // Specific log
+            throw new Error("Date input field not found."); // Crucial error
         }
         const today = new Date();
         const year = today.getFullYear();
@@ -92,64 +125,75 @@
 
      // Function to ensure headers exist in the sheet
     async function ensureHeaders() {
-        console.log("Ensuring headers..."); // Debug log
-        try {
-            await Excel.run(async (context) => {
-                const sheet = context.workbook.worksheets.getActiveWorksheet();
-                const headerRange = sheet.getRangeByIndexes(0, 0, 1, headers.length);
-                headerRange.load("values");
-                await context.sync();
+        console.log("Executing ensureHeaders..."); // Debug log
+        // Note: Errors here are caught by the .catch() in the calling block
+        await Excel.run(async (context) => {
+            const sheet = context.workbook.worksheets.getActiveWorksheet();
+            // Reduce scope slightly - just get A1 initially to check for headers
+            const headerCheckRange = sheet.getRange("A1");
+            headerCheckRange.load("values");
+            await context.sync();
 
-                // Basic check: Does the first cell match the first header?
-                // A more robust check could compare all header values.
-                if (!headerRange.values || !headerRange.values[0] || headerRange.values[0][0] !== headers[0]) {
-                    console.log("Headers not found or incorrect, writing headers..."); // Debug log
-                    headerRange.values = [headers];
-                    headerRange.format.font.bold = true;
-                    headerRange.format.autofitColumns();
-                    await context.sync();
-                    console.log("Headers written."); // Debug log
-                } else {
-                     console.log("Headers found."); // Debug log
-                }
-            });
-        } catch (error) {
-             console.error("Error ensuring headers:", error);
-             showStatus("Error setting up sheet headers: " + error.message, true);
-             // Rethrow or handle as appropriate for initialization sequence
-             throw error;
-        }
+            let headersNeedWriting = true; // Assume we need to write unless proven otherwise
+            if (headerCheckRange.values && headerCheckRange.values[0] && headerCheckRange.values[0][0] === headers[0]) {
+                // Basic check passed, let's assume headers are okay for now
+                // A more robust check could load the whole expected header range and compare all values
+                headersNeedWriting = false;
+                 console.log("Header check indicates headers likely exist (A1 matches)."); // Debug log
+            } else {
+                 console.log("Header check failed (A1 empty or doesn't match). Will write headers."); // Debug log
+            }
+
+            if (headersNeedWriting) {
+                console.log("Writing headers..."); // Debug log
+                const headerRange = sheet.getRangeByIndexes(0, 0, 1, headers.length);
+                headerRange.values = [headers];
+                headerRange.format.font.bold = true;
+                headerRange.format.autofitColumns(); // Autofit after writing
+                await context.sync();
+                console.log("Headers written successfully."); // Debug log
+            }
+        });
     }
 
 
     async function logData() {
         clearStatus();
-        console.log("Log Data button clicked."); // Debug log
+        console.log("Executing logData..."); // Debug log
 
         try {
-            // Collect data from form
-            const date = document.getElementById('date').value;
-            const age = document.getElementById('age').value;
-            const sexElement = document.querySelector('input[name="sex"]:checked');
-            const mrn = document.getElementById('mrn').value;
-            const diagnosis = document.getElementById('diagnosis').value;
-            const procedure = document.getElementById('procedure').value;
-            const roleElement = document.querySelector('input[name="role"]:checked');
-            const surgeryTypeElement = document.querySelector('input[name="surgery-type"]:checked');
+            // Collect data from form - Wrap this in a try block too for immediate feedback
+            let date, age, sexElement, mrn, diagnosis, procedure, roleElement, surgeryTypeElement, sex, role, surgeryType;
+             try {
+                date = document.getElementById('date').value;
+                age = document.getElementById('age').value;
+                sexElement = document.querySelector('input[name="sex"]:checked');
+                mrn = document.getElementById('mrn').value;
+                diagnosis = document.getElementById('diagnosis').value;
+                procedure = document.getElementById('procedure').value;
+                roleElement = document.querySelector('input[name="role"]:checked');
+                surgeryTypeElement = document.querySelector('input[name="surgery-type"]:checked');
 
-            // Validate required fields more explicitly
-            if (!age) { throw new Error("Age is required."); }
-            if (!sexElement) { throw new Error("Sex selection is required."); } // Should not happen with default checked
-            if (!mrn) { throw new Error("MRN is required."); }
-            if (!diagnosis) { throw new Error("Diagnosis is required."); }
-            if (!procedure) { throw new Error("Procedure is required."); }
-            if (!roleElement) { throw new Error("Role selection is required."); } // Should not happen
-            if (!surgeryTypeElement) { throw new Error("Surgery Type selection is required."); } // Should not happen
+                 // Validate required fields more explicitly
+                if (!date) { throw new Error("Date is missing (should be auto-filled).");} // Date should exist
+                if (!age) { throw new Error("Age is required."); }
+                if (!sexElement) { throw new Error("Sex selection is required."); }
+                if (!mrn) { throw new Error("MRN is required."); }
+                if (!diagnosis) { throw new Error("Diagnosis is required."); }
+                if (!procedure) { throw new Error("Procedure is required."); }
+                if (!roleElement) { throw new Error("Role selection is required."); }
+                if (!surgeryTypeElement) { throw new Error("Surgery Type selection is required."); }
 
+                sex = sexElement.value;
+                role = roleElement.value;
+                surgeryType = surgeryTypeElement.value;
 
-            const sex = sexElement.value;
-            const role = roleElement.value;
-            const surgeryType = surgeryTypeElement.value;
+             } catch (formError) {
+                  console.error("Error collecting data from form:", formError);
+                  // Rethrow specifically as a form validation error for clarity
+                  throw new Error(`Form Error: ${formError.message}`);
+             }
+
 
             // Get selected attendants
             const selectedAttendants = [];
@@ -157,7 +201,7 @@
             attendantCheckboxes.forEach(checkbox => {
                 selectedAttendants.push(checkbox.value);
             });
-            const attendantsString = selectedAttendants.join(', '); // Combine names, empty string if none selected
+            const attendantsString = selectedAttendants.join(', ');
 
             // Prepare data row for Excel (order MUST match headers)
             const dataToLog = [
@@ -165,45 +209,43 @@
                 attendantsString, role, surgeryType
             ];
 
-            console.log("Data collected:", dataToLog); // Debug log
+            console.log("Data collected for logging:", dataToLog); // Debug log
 
             // Write data to Excel
             await Excel.run(async (context) => {
                 const sheet = context.workbook.worksheets.getActiveWorksheet();
 
-                // Find the first empty row *after* the header row (more robust)
-                 // Check row 1 for headers first to ensure we don't overwrite them
+                // Find the first empty row *after* the header row (robust check)
                 const headerRange = sheet.getRange("A1"); // Check A1 specifically
                 headerRange.load("values");
                 await context.sync();
 
                 let firstEmptyRowIndex;
-                 // Check if A1 looks like the start of our headers
-                if (headerRange.values && headerRange.values[0][0] === headers[0]) {
-                    // Headers likely exist, find the next row using used range below headers
-                     const usedRange = sheet.getRange("A1").getUsedRange(true); // Range including headers and data
-                     usedRange.load("rowCount");
+                // Use getUsedRange starting from A1 only if A1 looks like a header
+                if (headerRange.values && headerRange.values[0] && headerRange.values[0][0] === headers[0]) {
+                     const dataRange = sheet.getRange("A1").getUsedRange(true); // Get range including headers + data
+                     dataRange.load("rowCount");
                      await context.sync();
-                     firstEmptyRowIndex = usedRange.rowCount; // The first row *after* the used range
-                     console.log(`Headers found. Used range rows: ${usedRange.rowCount}. Writing to row index: ${firstEmptyRowIndex}`); // Debug log
+                     firstEmptyRowIndex = dataRange.rowCount; // The row *after* the last used row
+                     console.log(`Headers found. Used range rows: ${dataRange.rowCount}. Writing to row index: ${firstEmptyRowIndex}`);
                 } else {
-                     // Headers don't seem to be in A1, assume sheet is empty or has other data.
-                     // Attempt to write headers first, then data. This might overwrite unrelated data if sheet isn't truly empty.
-                     console.warn("Headers not detected in A1. Writing headers and data from the top."); // Debug log
-                     const writeHeaderRange = sheet.getRangeByIndexes(0, 0, 1, headers.length);
-                     writeHeaderRange.values = [headers];
-                     writeHeaderRange.format.font.bold = true;
-                     firstEmptyRowIndex = 1; // Data goes below the newly written headers
+                     // Headers missing or sheet doesn't start with our header.
+                     // This case should be rare now due to ensureHeaders, but handle defensively.
+                     console.warn("Headers not detected correctly in A1 before logging. Attempting to write from row 1.");
+                     // We might need to write headers again here if ensureHeaders failed silently,
+                     // but let's assume ensureHeaders worked or will run again on reload.
+                     // For now, just log starting from row 1 (index 1).
+                     firstEmptyRowIndex = 1; // Data goes below assumed headers
+                     // Consider re-running ensureHeaders or writing them here if this becomes a common issue.
                 }
 
-
                 // Get the range for the new data row
-                const dataRange = sheet.getRangeByIndexes(firstEmptyRowIndex, 0, 1, dataToLog.length);
-                dataRange.values = [dataToLog];
-                console.log(`Writing data to range: ${dataRange.address}`); // Debug log
+                const targetRange = sheet.getRangeByIndexes(firstEmptyRowIndex, 0, 1, dataToLog.length);
+                targetRange.values = [dataToLog];
+                console.log(`Writing data to range: ${targetRange.address}`); // Debug log
 
-                // Autofit columns for better readability (consider doing this less often if performance is an issue)
-                 sheet.getUsedRange(true).getEntireColumn().format.autofitColumns();
+                // Autofit columns for better readability
+                sheet.getUsedRange(true).getEntireColumn().format.autofitColumns();
 
                 await context.sync();
                 console.log("Data logged successfully to Excel."); // Debug log
@@ -217,34 +259,40 @@
             });
 
         } catch (error) {
+            // Catch errors from form validation OR Excel.run
             handleError(error); // Use central error handler
         }
     }
 
     function handleError(error) {
-         console.error("Error:", error);
-         let errorMessage = "An unexpected error occurred.";
+         console.error("Error caught by handleError:", error); // Log the raw error
+         let errorMessage = "An unexpected error occurred. Please check console logs if possible."; // Default message
          if (error instanceof Error) {
-             errorMessage = error.message;
+             errorMessage = error.message; // Get message from Error object
          } else if (typeof error === 'string') {
-            errorMessage = error;
+            errorMessage = error; // Use string directly if error was thrown as string
          }
 
+         // Check specifically for OfficeExtension.Error for more details
         if (error instanceof OfficeExtension.Error) {
-            console.error("OfficeExtension Error Details: " + JSON.stringify(error.debugInfo));
+            console.error("OfficeExtension Error Details: Code=" + error.code + ", Message=" + error.message + ", DebugInfo=" + JSON.stringify(error.debugInfo));
+            // Provide a more user-friendly message for common Office errors if possible
             errorMessage = `Office API Error: ${error.message} (Code: ${error.code})`;
         }
+        // Always show the error in the status div
         showStatus(`Error: ${errorMessage}`, true);
     }
 
 
     function showStatus(message, isError) {
+        console.log(`showStatus called: ${message} (isError: ${isError})`); // Log status updates
         const statusDiv = document.getElementById('status');
         if (statusDiv) {
             statusDiv.textContent = message;
             statusDiv.style.color = isError ? 'red' : 'green';
         } else {
-            console.warn("Status div not found. Message:", message);
+            // This should ideally not happen if the HTML is correct
+            console.error("Status div (#status) not found in HTML! Cannot display message:", message);
         }
     }
 
@@ -255,4 +303,4 @@
          }
     }
 
-})();
+})(); // End of IIFE
