@@ -75,7 +75,8 @@ console.log("taskpane.js: EXECUTION END");
                  ensureHeaders()
                     .then(() => {
                          console.log("EnsureHeaders completed successfully (or headers already existed).");
-                         showStatus("Add-in loaded and sheet headers checked.", false); // Update status after async header check completes
+                         // Use a more informative success message
+                         showStatus("Add-in ready. Headers checked.", false); 
                     })
                     .catch(error => {
                         // Catch errors specifically from ensureHeaders
@@ -86,23 +87,15 @@ console.log("taskpane.js: EXECUTION END");
             } catch (error) {
                  // Catch synchronous errors during initialization (e.g., element not found)
                  console.error("Initialization error (sync):", error);
-                 showStatus("Error initializing add-in: " + error.message, true); // Show sync init errors
+                 // Make sync init errors clearer
+                 showStatus("Error during initial setup: " + error.message, true); 
+                 handleError(error); // Log details via handleError too
             }
 
         } else {
              // Handle non-Excel hosts
              console.warn("Host is not Excel:", info.host);
-             // Try setting status even if DOMContentLoaded isn't guaranteed here
-             const statusDiv = document.getElementById('status');
-             if (statusDiv) {
-                 statusDiv.textContent = "This add-in only works in Excel.";
-                 statusDiv.style.color = 'red';
-             } else {
-                // Fallback if DOM isn't ready - less likely now but good practice
-                 document.addEventListener('DOMContentLoaded', function() {
-                    showStatus("This add-in only works in Excel.", true);
-                });
-             }
+             showStatus("This add-in only works in Excel.", true);
         }
     });
 
@@ -168,15 +161,12 @@ console.log("taskpane.js: EXECUTION END");
         // Note: Errors here are caught by the .catch() in the calling block
         await Excel.run(async (context) => {
             const sheet = context.workbook.worksheets.getActiveWorksheet();
-            // Reduce scope slightly - just get A1 initially to check for headers
             const headerCheckRange = sheet.getRange("A1");
             headerCheckRange.load("values");
             await context.sync();
 
             let headersNeedWriting = true; // Assume we need to write unless proven otherwise
             if (headerCheckRange.values && headerCheckRange.values[0] && headerCheckRange.values[0][0] === headers[0]) {
-                // Basic check passed, let's assume headers are okay for now
-                // A more robust check could load the whole expected header range and compare all values
                 headersNeedWriting = false;
                  console.log("Header check indicates headers likely exist (A1 matches)."); // Debug log
             } else {
