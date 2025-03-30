@@ -283,71 +283,98 @@
             });
 
             async function initializeApp() {
-                console.log("Initializing app...");
                 try {
-                    // Clear any previous errors
-                    displayError("");
-                    
-                    // Wait for Excel to be ready
+                    // Wait for Excel
                     await Excel.run(async (context) => {
-                        console.log("Excel context ready.");
-                        // Just need to ensure Excel is accessible
+                        console.log("Excel is ready");
                     });
 
-                    // Populate attendants
-                    populateAttendants();
-                    
-                    // Ensure headers exist
+                    // Ensure headers
                     await ensureHeaders();
-                    
+
                     // Set up navigation
                     setupNavigation();
-                    
+
                     // Show first section
                     showSection(1);
-                    
-                    console.log("App initialized successfully.");
                 } catch (error) {
                     console.error("Initialization failed:", error);
-                    displayError("Error initializing the add-in. Please try again.");
+                    displayError("Failed to initialize. Please reload.");
                 }
             }
 
-            function populateAttendants() {
-                console.log("Populating attendants...");
-                const container = document.getElementById('attendantsContainer');
-                if (!container) {
-                    console.error("Attendants container not found.");
-                    return;
+            async function ensureHeaders() {
+                try {
+                    await Excel.run(async (context) => {
+                        const sheet = context.workbook.worksheets.getActiveWorksheet();
+                        const range = sheet.getRange("A1:I1");
+                        range.load("values");
+                        await context.sync();
+
+                        const headers = ["Date", "MRN", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
+                        
+                        // Check if headers exist and match
+                        if (!range.values[0] || range.values[0].some((value, index) => value !== headers[index])) {
+                            console.log("Adding headers...");
+                            range.values = [headers];
+                            range.format.font.bold = true;
+                            range.format.fill.color = "#D3D3D3";
+                            sheet.getUsedRange().format.autofitColumns();
+                            await context.sync();
+                            console.log("Headers added.");
+                        } else {
+                            console.log("Headers found.");
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error ensuring headers:", error);
+                    throw error;
                 }
+            }
 
-                container.innerHTML = '<label class="ms-Label">Attendants Present:</label>';
-                attendants.forEach((attendant, index) => {
-                    const checkboxId = `attendant_${index}`;
-                    const div = document.createElement('div');
-                    div.className = 'ms-CheckBox';
+            async function saveEntry() {
+                try {
+                    // Get form data
+                    const data = {
+                        mrn: document.getElementById('mrn').value || 'N/A',
+                        age: document.getElementById('age').value || 'N/A',
+                        sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
+                        diagnosis: document.getElementById('diagnosis').value || 'N/A',
+                        procedure: document.getElementById('procedure').value || 'N/A'
+                    };
 
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.className = 'ms-CheckBox-input';
-                    input.id = checkboxId;
-                    input.value = attendant;
-                    input.name = 'attendants';
+                    // Test data - use fixed values for testing
+                    const testRow = [
+                        new Date().toLocaleDateString(),
+                        data.mrn,
+                        data.age,
+                        data.sex,
+                        data.diagnosis,
+                        data.procedure,
+                        'Test Attendant',
+                        'Elective',
+                        'Primary Surgeon'
+                    ];
 
-                    const label = document.createElement('label');
-                    label.className = 'ms-CheckBox-field';
-                    label.htmlFor = checkboxId;
+                    // Try to write to Excel
+                    await Excel.run(async (context) => {
+                        const sheet = context.workbook.worksheets.getActiveWorksheet();
+                        const usedRange = sheet.getUsedRange(true);
+                        usedRange.load("rowCount");
+                        await context.sync();
 
-                    const labelSpan = document.createElement('span');
-                    labelSpan.className = 'ms-Label';
-                    labelSpan.textContent = attendant;
+                        const nextRow = usedRange.rowCount + 1;
+                        const targetRange = sheet.getRange(`A${nextRow}:I${nextRow}`);
+                        targetRange.values = [testRow];
+                        await context.sync();
+                    });
 
-                    label.appendChild(labelSpan);
-                    div.appendChild(input);
-                    div.appendChild(label);
-                    container.appendChild(div);
-                });
-                console.log("Attendants populated.");
+                    // If we get here, data was saved successfully
+                    showSection('success');
+                } catch (error) {
+                    console.error("Error saving data:", error);
+                    displayError("Failed to save data to Excel. Please try again.");
+                }
             }
 
             function setupNavigation() {
@@ -571,110 +598,6 @@
 
                 // Reset progress bar
                 updateProgressBar(0);
-            }
-
-            async function ensureHeaders() {
-                console.log("Ensuring headers...");
-                try {
-                    await Excel.run(async (context) => {
-                        const sheet = context.workbook.worksheets.getActiveWorksheet();
-                        const range = sheet.getRange("A1:I1");
-                        range.load("values");
-                        await context.sync();
-
-                        const headers = ["Date", "MRN", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
-                        
-                        // Check if headers exist and match
-                        if (!range.values[0] || range.values[0].some((value, index) => value !== headers[index])) {
-                            console.log("Adding headers...");
-                            range.values = [headers];
-                            range.format.font.bold = true;
-                            range.format.fill.color = "#D3D3D3";
-                            sheet.getUsedRange().format.autofitColumns();
-                            await context.sync();
-                            console.log("Headers added.");
-                        } else {
-                            console.log("Headers found.");
-                        }
-                    });
-                } catch (error) {
-                    console.error("Excel error in ensureHeaders:", error);
-                    throw error;
-                }
-            }
-
-            async function saveEntry() {
-                console.log("Starting saveEntry...");
-                try {
-                    // First, let's verify we can access Excel
-                    await Excel.run(async (context) => {
-                        console.log("Excel context ready.");
-                        
-                        // Get active worksheet
-                        const sheet = context.workbook.worksheets.getActiveWorksheet();
-                        
-                        // Get used range to find next row
-                        const usedRange = sheet.getUsedRange(true);
-                        usedRange.load("rowCount");
-                        await context.sync();
-                        
-                        // Calculate next row
-                        const nextRow = usedRange.rowCount + 1;
-                        console.log(`Next row to write: ${nextRow}`);
-                        
-                        // Get target range (A to I columns)
-                        const targetRange = sheet.getRange(`A${nextRow}:I${nextRow}`);
-                        
-                        // Collect all form data
-                        const data = {
-                            date: new Date().toLocaleDateString(),
-                            mrn: document.getElementById('mrn').value.trim() || 'N/A',
-                            age: document.getElementById('age').value.trim() || 'N/A',
-                            sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
-                            diagnosis: document.getElementById('diagnosis').value.trim() || 'N/A',
-                            procedure: document.getElementById('procedure').value.trim() || 'N/A',
-                            attendants: Array.from(document.querySelectorAll('input[name="attendants"]:checked'))
-                                .map(cb => cb.value).join(', ') || 'None',
-                            type: document.querySelector('input[name="elective_emergency"]:checked')?.value || 'N/A',
-                            role: document.getElementById('role').value || 'N/A'
-                        };
-                        
-                        console.log("Data to save:", data);
-                        
-                        // Set values in target range
-                        targetRange.values = [[
-                            data.date,
-                            data.mrn,
-                            data.age,
-                            data.sex,
-                            data.diagnosis,
-                            data.procedure,
-                            data.attendants,
-                            data.type,
-                            data.role
-                        ]];
-                        
-                        // Format the row
-                        targetRange.format.autofitColumns();
-                        
-                        // Load values to verify
-                        targetRange.load("values");
-                        await context.sync();
-                        
-                        console.log("Entry saved successfully. Values in Excel:", targetRange.values);
-                    });
-                    
-                    // Show success message after successful save
-                    showSection('success');
-                } catch (error) {
-                    console.error("Excel error in saveEntry:", error);
-                    if (error instanceof OfficeExtension.Error) {
-                        console.error("Excel error details:", error.debugInfo);
-                        displayError(`Excel error: ${error.message}`);
-                    } else {
-                        displayError("Error saving log. Please try again.");
-                    }
-                }
             }
 
             function displayError(message) {
