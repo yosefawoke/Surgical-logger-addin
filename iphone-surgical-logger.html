@@ -9,10 +9,9 @@
     <!-- Office JavaScript API -->
     <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
     
-    <!-- For more information on Fluent UI, visit https://developer.microsoft.com/fluentui -->
+    <!-- Fluent UI -->
     <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css"/>
 
-    <!-- Template styles optimized for iPhone -->
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -28,9 +27,11 @@
             margin-top: 10px;
             margin-bottom: 15px;
         }
-        h2 {
-            font-size: 18px;
-            margin-top: 0;
+        .form-section {
+            display: none;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
             margin-bottom: 15px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
@@ -113,6 +114,9 @@
         <div class="progress-bar">
             <div id="progressBar" class="progress-bar-inner"></div>
         </div>
+
+        <!-- Test Button -->
+        <button id="testButton" style="position: fixed; top: 10px; right: 10px; z-index: 1000;">Test Excel Write</button>
 
         <div id="main-content">
             <!-- Step 1: Patient MRN -->
@@ -253,9 +257,8 @@
         (function () {
             "use strict";
 
-            // Global variables
             let currentSection = 1;
-            const totalSections = 6; // MRN, Age, Sex, Diag/Proc, Attendants, Summary
+            const totalSections = 6;
             const attendants = [
                 "Attending Surgeon",
                 "Fellow",
@@ -271,42 +274,8 @@
                 "Other"
             ];
 
-            // Wait for Office.js to be ready
-            Office.onReady(function(info) {
-                console.log("Office is ready.");
-                // Wait for DOM to be fully loaded
-                if (document.readyState === "complete" || document.readyState === "interactive") {
-                    initializeApp();
-                } else {
-                    document.addEventListener('DOMContentLoaded', initializeApp);
-                }
-            });
-
-            async function initializeApp() {
-                try {
-                    // Test Excel write capability immediately
-                    await testExcelWrite();
-
-                    // Wait for Excel
-                    await Excel.run(async (context) => {
-                        console.log("Excel is ready");
-                    });
-
-                    // Ensure headers
-                    await ensureHeaders();
-
-                    // Set up navigation
-                    setupNavigation();
-
-                    // Show first section
-                    showSection(1);
-                } catch (error) {
-                    console.error("Initialization failed:", error);
-                    displayError("Failed to initialize. Please reload.");
-                }
-            }
-
-            async function testExcelWrite() {
+            // Test Button
+            document.getElementById('testButton').addEventListener('click', async () => {
                 try {
                     await Excel.run(async (context) => {
                         const sheet = context.workbook.worksheets.getActiveWorksheet();
@@ -319,121 +288,85 @@
                     console.error('Excel write failed:', error);
                     alert('Failed to write to Excel. Check console for details.');
                 }
-            }
+            });
 
-            async function ensureHeaders() {
+            // Initialize app
+            async function initializeApp() {
                 try {
                     await Excel.run(async (context) => {
-                        const sheet = context.workbook.worksheets.getActiveWorksheet();
-                        const range = sheet.getRange("A1:I1");
-                        range.load("values");
-                        await context.sync();
-
-                        const headers = ["Date", "MRN", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
-                        
-                        // Check if headers exist and match
-                        if (!range.values[0] || range.values[0].some((value, index) => value !== headers[index])) {
-                            console.log("Adding headers...");
-                            range.values = [headers];
-                            range.format.font.bold = true;
-                            range.format.fill.color = "#D3D3D3";
-                            sheet.getUsedRange().format.autofitColumns();
-                            await context.sync();
-                            console.log("Headers added.");
-                        } else {
-                            console.log("Headers found.");
-                        }
+                        console.log("Excel is ready");
                     });
+
+                    await ensureHeaders();
+                    populateAttendants();
+                    setupNavigation();
+                    showSection(1);
                 } catch (error) {
-                    console.error("Error ensuring headers:", error);
-                    throw error;
+                    console.error("Initialization failed:", error);
+                    displayError("Failed to initialize. Please reload.");
                 }
             }
 
-            async function saveEntry() {
-                try {
-                    // Get form data
-                    const data = {
-                        mrn: document.getElementById('mrn').value || 'N/A',
-                        age: document.getElementById('age').value || 'N/A',
-                        sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
-                        diagnosis: document.getElementById('diagnosis').value || 'N/A',
-                        procedure: document.getElementById('procedure').value || 'N/A'
-                    };
+            // Populate attendants
+            function populateAttendants() {
+                const container = document.getElementById('attendantsContainer');
+                if (!container) return;
 
-                    // Test data - use fixed values for testing
-                    const testRow = [
-                        new Date().toLocaleDateString(),
-                        data.mrn,
-                        data.age,
-                        data.sex,
-                        data.diagnosis,
-                        data.procedure,
-                        'Test Attendant',
-                        'Elective',
-                        'Primary Surgeon'
-                    ];
+                container.innerHTML = '<label class="ms-Label">Attendants Present:</label>';
+                attendants.forEach((attendant, index) => {
+                    const checkboxId = `attendant_${index}`;
+                    const div = document.createElement('div');
+                    div.className = 'ms-CheckBox';
 
-                    // Try to write to Excel
-                    await Excel.run(async (context) => {
-                        const sheet = context.workbook.worksheets.getActiveWorksheet();
-                        const usedRange = sheet.getUsedRange(true);
-                        usedRange.load("rowCount");
-                        await context.sync();
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.className = 'ms-CheckBox-input';
+                    input.id = checkboxId;
+                    input.value = attendant;
+                    input.name = 'attendants';
 
-                        const nextRow = usedRange.rowCount + 1;
-                        const targetRange = sheet.getRange(`A${nextRow}:I${nextRow}`);
-                        targetRange.values = [testRow];
-                        await context.sync();
-                    });
+                    const label = document.createElement('label');
+                    label.className = 'ms-CheckBox-field';
+                    label.htmlFor = checkboxId;
 
-                    // If we get here, data was saved successfully
-                    showSection('success');
-                } catch (error) {
-                    console.error("Error saving data:", error);
-                    displayError("Failed to save data to Excel. Please try again.");
-                }
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'ms-Label';
+                    labelSpan.textContent = attendant;
+
+                    label.appendChild(labelSpan);
+                    div.appendChild(input);
+                    div.appendChild(label);
+                    container.appendChild(div);
+                });
             }
 
+            // Setup navigation
             function setupNavigation() {
-                console.log("Setting up navigation...");
-                
-                // Helper function to safely add event listener
-                function addSafeEventListener(elementId, eventName, handler) {
-                    const element = document.getElementById(elementId);
-                    if (element) {
-                        element.addEventListener(eventName, handler);
-                        console.log(`Added listener for ${eventName} on ${elementId}`);
-                    } else {
-                        console.warn(`Element ${elementId} not found during listener setup`);
-                    }
-                }
-
-                // Add listeners for all navigation buttons
-                addSafeEventListener("nextBtn1", "click", () => {
+                // Add event listeners for navigation buttons
+                document.getElementById("nextBtn1")?.addEventListener("click", () => {
                     if (validateSection1()) showSection(currentSection + 1);
                 });
-                addSafeEventListener("backBtn2", "click", () => showSection(currentSection - 1));
-                addSafeEventListener("nextBtn2", "click", () => {
+                document.getElementById("backBtn2")?.addEventListener("click", () => showSection(currentSection - 1));
+                document.getElementById("nextBtn2")?.addEventListener("click", () => {
                     if (validateSection2()) showSection(currentSection + 1);
                 });
-                addSafeEventListener("backBtn3", "click", () => showSection(currentSection - 1));
-                addSafeEventListener("nextBtn3", "click", () => {
+                document.getElementById("backBtn3")?.addEventListener("click", () => showSection(currentSection - 1));
+                document.getElementById("nextBtn3")?.addEventListener("click", () => {
                     if (validateSection3()) showSection(currentSection + 1);
                 });
-                addSafeEventListener("backBtn4", "click", () => showSection(currentSection - 1));
-                addSafeEventListener("nextBtn4", "click", () => {
+                document.getElementById("backBtn4")?.addEventListener("click", () => showSection(currentSection - 1));
+                document.getElementById("nextBtn4")?.addEventListener("click", () => {
                     if (validateSection4()) showSection(currentSection + 1);
                 });
-                addSafeEventListener("backBtn5", "click", () => showSection(currentSection - 1));
-                addSafeEventListener("nextBtn5", "click", () => {
+                document.getElementById("backBtn5")?.addEventListener("click", () => showSection(currentSection - 1));
+                document.getElementById("nextBtn5")?.addEventListener("click", () => {
                     if (validateSection5()) {
                         generateSummary();
                         showSection(currentSection + 1);
                     }
                 });
-                addSafeEventListener("backBtn6", "click", () => showSection(currentSection - 1));
-                addSafeEventListener("submitBtn", "click", async () => {
+                document.getElementById("backBtn6")?.addEventListener("click", () => showSection(currentSection - 1));
+                document.getElementById("submitBtn")?.addEventListener("click", async () => {
                     try {
                         await saveEntry();
                         showSection('success');
@@ -442,12 +375,10 @@
                         displayError("Error saving log. Please try again.");
                     }
                 });
-                addSafeEventListener("newLogBtn", "click", () => {
+                document.getElementById("newLogBtn")?.addEventListener("click", () => {
                     resetForm();
                     showSection(1);
                 });
-
-                console.log("Navigation setup complete.");
             }
 
             // Validation functions
@@ -509,7 +440,6 @@
             }
 
             function validateSection5() {
-                // Currently no specific validation for attendants section
                 return true;
             }
 
@@ -558,7 +488,6 @@
             }
 
             function showSection(sectionNumber) {
-                console.log(`Showing section: ${sectionNumber}`);
                 displayError("");
 
                 // Hide all sections
@@ -590,7 +519,7 @@
                     } else {
                         console.error(`Section element section${sectionNumber} not found.`);
                         displayError("Error: UI element missing.");
-                        showSection(1); // Fallback to first section
+                        showSection(1);
                     }
                 } else {
                     console.warn(`Invalid section number: ${sectionNumber}. Resetting to section 1.`);
@@ -599,7 +528,6 @@
             }
 
             function resetForm() {
-                // Clear all input fields
                 document.getElementById('mrn').value = '';
                 document.getElementById('age').value = '';
                 document.querySelector('input[name="sex"]:checked')?.checked = false;
@@ -618,6 +546,75 @@
                 updateProgressBar(0);
             }
 
+            async function ensureHeaders() {
+                try {
+                    await Excel.run(async (context) => {
+                        const sheet = context.workbook.worksheets.getActiveWorksheet();
+                        const range = sheet.getRange("A1:I1");
+                        range.load("values");
+                        await context.sync();
+
+                        const headers = ["Date", "MRN", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
+                        
+                        if (!range.values[0] || range.values[0].some((value, index) => value !== headers[index])) {
+                            range.values = [headers];
+                            range.format.font.bold = true;
+                            range.format.fill.color = "#D3D3D3";
+                            sheet.getUsedRange().format.autofitColumns();
+                            await context.sync();
+                        }
+                    });
+                } catch (error) {
+                    console.error("Excel error in ensureHeaders:", error);
+                    throw error;
+                }
+            }
+
+            async function saveEntry() {
+                try {
+                    await Excel.run(async (context) => {
+                        const sheet = context.workbook.worksheets.getActiveWorksheet();
+                        const usedRange = sheet.getUsedRange(true);
+                        usedRange.load("rowCount");
+                        await context.sync();
+
+                        const nextRow = usedRange.rowCount + 1;
+                        const targetRange = sheet.getRange(`A${nextRow}:I${nextRow}`);
+
+                        const data = {
+                            date: new Date().toLocaleDateString(),
+                            mrn: document.getElementById('mrn').value || 'N/A',
+                            age: document.getElementById('age').value || 'N/A',
+                            sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
+                            diagnosis: document.getElementById('diagnosis').value || 'N/A',
+                            procedure: document.getElementById('procedure').value || 'N/A',
+                            attendants: Array.from(document.querySelectorAll('input[name="attendants"]:checked'))
+                                .map(cb => cb.value).join(', ') || 'None',
+                            type: document.querySelector('input[name="elective_emergency"]:checked')?.value || 'N/A',
+                            role: document.getElementById('role').value || 'N/A'
+                        };
+
+                        targetRange.values = [[
+                            data.date,
+                            data.mrn,
+                            data.age,
+                            data.sex,
+                            data.diagnosis,
+                            data.procedure,
+                            data.attendants,
+                            data.type,
+                            data.role
+                        ]];
+
+                        targetRange.format.autofitColumns();
+                        await context.sync();
+                    });
+                } catch (error) {
+                    console.error("Excel error in saveEntry:", error);
+                    throw error;
+                }
+            }
+
             function displayError(message) {
                 const errorDisplay = document.getElementById('errorDisplay');
                 if (errorDisplay) {
@@ -625,6 +622,14 @@
                 }
             }
 
+            // Initialize when Office is ready
+            Office.onReady(function(info) {
+                if (document.readyState === "complete" || document.readyState === "interactive") {
+                    initializeApp();
+                } else {
+                    document.addEventListener('DOMContentLoaded', initializeApp);
+                }
+            });
         })();
     </script>
 </body>
