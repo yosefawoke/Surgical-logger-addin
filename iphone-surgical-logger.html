@@ -4,29 +4,29 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Surgical Log - Test 3 (Inline JS)</title>
+    <title>Surgical Log - Test 4 (Inline + OfficeJS)</title>
 
-    <!-- Test Alert 0a: Does *any* inline JS run? -->
+    <!-- Test Alert 0a -->
     <script>alert('Inline Script Test 0a');</script>
 
-    <!-- Office JavaScript API (Still COMMENTED OUT) -->
-    <!-- <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script> -->
+    <!-- Office JavaScript API (RE-ENABLED) -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
 
-     <!-- Test Alert 0b: Does *any* inline JS run AFTER where office.js would be? -->
-    <script>alert('Inline Script Test 0b');</script>
+     <!-- Test Alert 0b -->
+    <script>alert('Inline Script Test 0b. Office object exists? ' + (typeof Office !== 'undefined'));</script>
 
     <!-- App specific CSS file (Optional for this test) -->
     <!-- <link rel="stylesheet" href="taskpane.css" type="text/css" /> -->
 </head>
 <body>
-    <h1>Minimal Test Page (Inline JS Test)</h1>
+    <h1>Minimal Test Page (Inline + OfficeJS)</h1>
 
     <p>Attempting to load scripts...</p>
 
     <!-- Keep status div -->
     <div id="status">Loading...</div>
 
-    <!-- External App specific JavaScript file (COMMENTED OUT FOR TEST) -->
+    <!-- External App specific JavaScript file (Still COMMENTED OUT) -->
     <!-- <script type="text/javascript" src="taskpane.js"></script> -->
 
     <!-- Inline Test Script at End of Body -->
