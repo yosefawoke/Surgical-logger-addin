@@ -1,0 +1,82 @@
+body {
+    padding: 15px;
+    font-family: Segoe UI, Frutiger, Frutiger Linotype, Dejavu Sans, Helvetica Neue, Arial, sans-serif;
+    font-size: 14px;
+    background-color: #fff;
+    color: #333;
+}
+
+.ms-Panel {
+    /* Basic panel styling */
+}
+
+.ms-Panel-main {
+    padding: 20px;
+}
+
+h1.ms-font-xl {
+    margin-bottom: 20px;
+}
+
+/* Style form elements using Fabric UI classes where possible */
+.ms-Grid-row {
+    margin-bottom: 15px;
+}
+
+.ms-Label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600; /* Make labels bolder */
+}
+
+.ms-TextField-field,
+textarea.ms-TextField-field {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+label {
+    margin-right: 15px;
+    vertical-align: middle;
+}
+
+#attendants-list div {
+    margin-bottom: 5px; /* Space between checkbox items */
+}
+
+.ms-Button {
+    margin-top: 20px;
+}
+
+#status {
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+/* Make grid columns align labels and inputs better */
+.ms-Grid-col.ms-sm4 {
+    display: flex;
+    align-items: center; /* Vertically center the label */
+    padding-right: 10px; /* Add some space between label and input */
+    text-align: right;
+}
+
+.ms-Grid-col.ms-sm8 {
+     display: flex;
+     align-items: center; /* Align input elements nicely */
+     flex-wrap: wrap; /* Allow radio buttons/checkboxes to wrap */
+}
+
+/* Readonly date field styling */
+input[type="date"][readonly] {
+    background-color: #f4f4f4; /* Light gray background */
+    cursor: default;
+} 

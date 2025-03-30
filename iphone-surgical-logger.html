@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Surgical Log Sheet</title>
+
+    <!-- Office JavaScript API -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+
+    <!-- Fabric UI for styling (optional, but recommended for Office look and feel) -->
+    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css"/>
+
+    <!-- App specific CSS file -->
+    <link rel="stylesheet" href="taskpane.css" type="text/css" />
+</head>
+<body class="ms-Fabric" dir="ltr">
+    <div class="ms-Panel">
+        <div class="ms-Panel-main">
+            <h1 class="ms-font-xl">Surgical Log Entry</h1>
+
+            <form id="log-form">
+                <div class="ms-Grid" dir="ltr">
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Date:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                            <input type="date" id="date" name="date" class="ms-TextField-field" readonly>
+                        </div>
+                    </div>
+
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Age:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                            <input type="number" id="age" name="age" class="ms-TextField-field" required>
+                        </div>
+                    </div>
+
+                     <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Sex:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                            <input type="radio" id="sex-male" name="sex" value="Male" checked> <label for="sex-male">Male</label>
+                            <input type="radio" id="sex-female" name="sex" value="Female"> <label for="sex-female">Female</label>
+                        </div>
+                    </div>
+
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">MRN:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                            <input type="text" id="mrn" name="mrn" class="ms-TextField-field" required>
+                        </div>
+                    </div>
+
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Diagnosis:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                            <textarea id="diagnosis" name="diagnosis" rows="3" class="ms-TextField-field" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Procedure:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                            <textarea id="procedure" name="procedure" rows="3" class="ms-TextField-field" required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Attendant(s):</div>
+                        <div class="ms-Grid-col ms-sm8" id="attendants-list">
+                            <!-- Checkboxes will be populated by JS -->
+                        </div>
+                    </div>
+
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Role:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                             <input type="radio" id="role-primary" name="role" value="Primary" checked> <label for="role-primary">Primary</label>
+                             <input type="radio" id="role-assistant" name="role" value="Assistant"> <label for="role-assistant">Assistant</label>
+                             <input type="radio" id="role-observer" name="role" value="Observer"> <label for="role-observer">Observer</label>
+                        </div>
+                    </div>
+
+                    <div class="ms-Grid-row">
+                        <div class="ms-Grid-col ms-sm4 ms-Label">Surgery Type:</div>
+                        <div class="ms-Grid-col ms-sm8">
+                            <input type="radio" id="type-elective" name="surgery-type" value="Elective" checked> <label for="type-elective">Elective</label>
+                            <input type="radio" id="type-emergency" name="surgery-type" value="Emergency"> <label for="type-emergency">Emergency</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" id="submit-button" class="ms-Button ms-Button--primary"><span class="ms-Button-label">Log Data</span></button>
+                <div id="status" class="ms-font-m ms-fontColor-redDark"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- App specific JavaScript file -->
+    <script type="text/javascript" src="taskpane.js"></script>
+</body>
+</html> 
