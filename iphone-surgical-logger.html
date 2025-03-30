@@ -583,14 +583,19 @@
                         await context.sync();
 
                         const headers = ["Date", "MRN", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
+                        
+                        // Check if headers exist and match
                         if (!range.values[0] || range.values[0].some((value, index) => value !== headers[index])) {
                             console.log("Adding headers...");
                             range.values = [headers];
                             range.format.font.bold = true;
                             range.format.fill.color = "#D3D3D3";
                             sheet.getUsedRange().format.autofitColumns();
+                            await context.sync();
+                            console.log("Headers added.");
+                        } else {
+                            console.log("Headers found.");
                         }
-                        await context.sync();
                     });
                 } catch (error) {
                     console.error("Excel error in ensureHeaders:", error);
@@ -608,19 +613,19 @@
                         await context.sync();
 
                         const nextRow = usedRange.rowCount + 1;
-                        const targetRange = sheet.getRangeByIndexes(nextRow, 0, 1, 9);
+                        const targetRange = sheet.getRange(`A${nextRow}:I${nextRow}`);
 
                         const data = {
                             date: new Date().toLocaleDateString(),
-                            mrn: document.getElementById('mrn').value,
-                            age: document.getElementById('age').value,
-                            sex: document.querySelector('input[name="sex"]:checked')?.value,
-                            diagnosis: document.getElementById('diagnosis').value,
-                            procedure: document.getElementById('procedure').value,
+                            mrn: document.getElementById('mrn').value.trim(),
+                            age: document.getElementById('age').value.trim(),
+                            sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
+                            diagnosis: document.getElementById('diagnosis').value.trim(),
+                            procedure: document.getElementById('procedure').value.trim(),
                             attendants: Array.from(document.querySelectorAll('input[name="attendants"]:checked'))
-                                .map(cb => cb.value).join(', '),
-                            type: document.querySelector('input[name="elective_emergency"]:checked')?.value,
-                            role: document.getElementById('role').value
+                                .map(cb => cb.value).join(', ') || 'None',
+                            type: document.querySelector('input[name="elective_emergency"]:checked')?.value || 'N/A',
+                            role: document.getElementById('role').value || 'N/A'
                         };
 
                         targetRange.values = [[
@@ -635,8 +640,10 @@
                             data.role
                         ]];
 
-                        sheet.getUsedRange().format.autofitColumns();
+                        // Format the row
+                        targetRange.format.autofitColumns();
                         await context.sync();
+                        console.log("Entry saved successfully.");
                     });
                 } catch (error) {
                     console.error("Excel error in saveEntry:", error);
