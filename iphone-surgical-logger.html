@@ -284,6 +284,9 @@
 
             async function initializeApp() {
                 try {
+                    // Test Excel write capability immediately
+                    await testExcelWrite();
+
                     // Wait for Excel
                     await Excel.run(async (context) => {
                         console.log("Excel is ready");
@@ -300,6 +303,21 @@
                 } catch (error) {
                     console.error("Initialization failed:", error);
                     displayError("Failed to initialize. Please reload.");
+                }
+            }
+
+            async function testExcelWrite() {
+                try {
+                    await Excel.run(async (context) => {
+                        const sheet = context.workbook.worksheets.getActiveWorksheet();
+                        const range = sheet.getRange('A1');
+                        range.values = [["Test Value"]];
+                        await context.sync();
+                        alert('Successfully wrote to Excel!');
+                    });
+                } catch (error) {
+                    console.error('Excel write failed:', error);
+                    alert('Failed to write to Excel. Check console for details.');
                 }
             }
 
