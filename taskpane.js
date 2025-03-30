@@ -6,6 +6,8 @@
     const headers = ["Date", "Age", "Sex", "MRN", "Diagnosis", "Procedure", "Attendant(s)", "Role", "Surgery Type"];
 
     Office.onReady(function(info){
+        // Alert 1: Test if Office.onReady fires
+        alert("Office.onReady fired!");
         console.log("Office.onReady fired.");
 
         if (info.host === Office.HostType.Excel) {
@@ -13,42 +15,56 @@
 
             // Introduce delay
             setTimeout(function() {
+                // Alert 2: Test if setTimeout callback executes
+                alert("setTimeout callback executed!");
                 console.log("Minimal delayed init starting...");
                 try {
+                    // Alert 3: Check for statusDiv
                     const statusDiv = document.getElementById('status');
-                    const submitButton = document.getElementById('submit-button');
+                    alert(statusDiv ? "statusDiv FOUND!" : "statusDiv NOT FOUND!");
+                    console.log("Checked for statusDiv:", statusDiv ? "Found" : "Not Found");
 
+                    // Alert 4: Check for submitButton
+                    const submitButton = document.getElementById('submit-button');
+                    alert(submitButton ? "submitButton FOUND!" : "submitButton NOT FOUND!");
+                     console.log("Checked for submitButton:", submitButton ? "Found" : "Not Found");
+
+                    // Only proceed if both crucial elements are found
                     if (!statusDiv) {
-                        console.error("CRITICAL: Status div (#status) not found in delayed init!");
-                        alert("Status div missing!"); // Alert as fallback
+                        console.error("CRITICAL: Status div (#status) not found!");
+                        alert("Status div missing! Cannot proceed."); // Alert as fallback
                         return; // Stop if status div missing
                     }
-                    statusDiv.textContent = "Attempting Init..."; // Test message 1
-                    statusDiv.style.color = 'orange';
-                    console.log("Set status to 'Attempting Init...'");
-
-                    if (!submitButton) {
-                         throw new Error("Submit button (#submit-button) not found.");
+                     if (!submitButton) {
+                         console.error("CRITICAL: Submit button (#submit-button) not found!");
+                         alert("Submit button missing! Cannot proceed."); // Alert as fallback
+                         return; // Stop if button missing
                     }
-                     console.log("Submit button found.");
 
-                    // ONLY attach the listener
+                    statusDiv.textContent = "Attempting to attach listener..."; // Test message 1
+                    statusDiv.style.color = 'orange';
+                    console.log("Set status to 'Attempting to attach listener...'");
+
+                    // Attach the listener
                     submitButton.addEventListener('click', logData);
                     console.log("Submit button listener attached for test.");
 
                     // Report success of this minimal init
-                    statusDiv.textContent = "Minimal Init OK. Click Log Data button to test.";
+                    statusDiv.textContent = "Minimal Init OK (Alert Test). Click button.";
                      statusDiv.style.color = 'green';
                     console.log("Minimal init seems OK.");
 
                 } catch (error) {
                      console.error("Minimal delayed initialization error:", error);
+                     // Try alerting the error message
+                     alert("Error during init: " + error.message);
                      handleError(error); // Display error in status div if possible
                 }
             }, 150); // Slightly longer delay just in case
 
         } else {
              console.warn("Host is not Excel:", info.host);
+             alert("Host is not Excel: " + info.host); // Alert if not Excel
              // Use showStatus which checks for statusDiv
              showStatus("This add-in only works in Excel.", true);
         }
@@ -137,18 +153,18 @@
 
     // --- Log Data Function (SIMPLIFIED FOR TESTING) ---
     async function logData() {
+        // Alert 5: Test if button click handler runs
+        alert("Log Data button clicked!");
         console.log("Log Data button clicked (Test Version).");
         try {
             // ONLY update the status div
-            showStatus("Log Button Clicked!", false); // Test Message 2
+             showStatus("Log Button Clicked! (Alert Test)", false); // Test Message 2
              console.log("Set status to 'Log Button Clicked!'");
-
-             // DO NOT collect data or call Excel.run in this test version
-             // DO NOT call ensureHeaders in this test version
 
         } catch (error) {
              console.error("Error in test logData:", error);
-            handleError(error);
+             alert("Error in logData: " + error.message);
+             handleError(error);
         }
     }
 
