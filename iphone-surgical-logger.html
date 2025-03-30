@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Surgical Log - Test 2</title>
+    <title>Surgical Log - Test 3 (Inline JS)</title>
 
     <!-- Test Alert 0a: Does *any* inline JS run? -->
     <script>alert('Inline Script Test 0a');</script>
 
-    <!-- Office JavaScript API (TEMPORARILY COMMENTED OUT) -->
+    <!-- Office JavaScript API (Still COMMENTED OUT) -->
     <!-- <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script> -->
 
      <!-- Test Alert 0b: Does *any* inline JS run AFTER where office.js would be? -->
@@ -19,14 +19,38 @@
     <!-- <link rel="stylesheet" href="taskpane.css" type="text/css" /> -->
 </head>
 <body>
-    <h1>Minimal Test Page (No Office.js)</h1>
+    <h1>Minimal Test Page (Inline JS Test)</h1>
 
     <p>Attempting to load scripts...</p>
 
-    <!-- Keep status div for taskpane.js -->
+    <!-- Keep status div -->
     <div id="status">Loading...</div>
 
-    <!-- App specific JavaScript file (Still using the ultra-simplified version) -->
-    <script type="text/javascript" src="taskpane.js"></script>
+    <!-- External App specific JavaScript file (COMMENTED OUT FOR TEST) -->
+    <!-- <script type="text/javascript" src="taskpane.js"></script> -->
+
+    <!-- Inline Test Script at End of Body -->
+    <script type="text/javascript">
+        alert('Inline END SCRIPT: Start');
+        console.log('Inline END SCRIPT: Start');
+        try {
+            const statusDiv = document.getElementById('status');
+            if (statusDiv) {
+                 alert('Inline END SCRIPT: statusDiv found.');
+                 statusDiv.textContent = "Inline Script Ran!";
+                 statusDiv.style.color = 'green';
+                 console.log('Inline END SCRIPT: Changed statusDiv.');
+            } else {
+                 alert('Inline END SCRIPT: statusDiv NOT found!');
+                 console.error('Inline END SCRIPT: statusDiv NOT found!');
+            }
+        } catch (error) {
+            alert('Inline END SCRIPT: Error: ' + error.message);
+            console.error('Inline END SCRIPT: Error:', error);
+        }
+         alert('Inline END SCRIPT: End');
+         console.log('Inline END SCRIPT: End');
+    </script>
+
 </body>
 </html> 
