@@ -1,636 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Surgical Logger for iPhone</title>
-
-    <!-- Office JavaScript API -->
-    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    
-    <!-- Fluent UI -->
-    <link rel="stylesheet" href="https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/11.0.0/css/fabric.min.css"/>
-
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding: 10px;
-            margin: 0;
-            background-color: #f5f5f5;
-            -webkit-text-size-adjust: 100%;
-        }
-        h1 {
-            text-align: center;
-            color: #0078d4;
-            font-size: 22px;
-            margin-top: 10px;
-            margin-bottom: 15px;
-        }
-        .form-section {
-            display: none;
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .form-section.active-section {
-            display: block;
-        }
-        .ms-TextField {
-            margin-bottom: 15px;
-        }
-        .ms-Label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-        }
-        .ms-TextField-field {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        .navigation-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-        }
-        .ms-Button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .ms-Button--primary {
-            background-color: #0078d4;
-            color: white;
-        }
-        .ms-Button--primary:hover {
-            background-color: #005a9e;
-        }
-        .ms-Button {
-            background-color: #f3f2f1;
-            color: #323130;
-        }
-        .ms-Button:hover {
-            background-color: #e1dfdd;
-        }
-        .error-message {
-            color: #ff0000;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-        .progress-bar {
-            height: 4px;
-            background: #e1dfdd;
-            border-radius: 2px;
-            margin: 15px 0;
-        }
-        .progress-bar-inner {
-            height: 100%;
-            background: #0078d4;
-            border-radius: 2px;
-            transition: width 0.3s ease;
-        }
-        .success-message {
-            text-align: center;
-            padding: 30px;
-        }
-        .success-icon {
-            font-size: 48px;
-            color: #0078d4;
-            margin-bottom: 15px;
-        }
-    </style>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Surgical Logger</title>
+ <style>
+ body { font-family: Arial, sans-serif; padding: 20px; }
+ label { display: block; margin-top: 10px; }
+ input, select { width: 100%; padding: 8px; margin-top: 5px; }
+ button { margin-top: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+ button:hover { background-color: #0056b3; }
+ </style>
 </head>
-<body class="ms-font-m ms-Fabric">
-    <div id="app">
-        <h1>Surgical Logger</h1>
-        <div id="errorDisplay" style="color: red; margin-top: 10px; font-weight: bold;"></div>
-        <div class="progress-bar">
-            <div id="progressBar" class="progress-bar-inner"></div>
-        </div>
+<body>
+ <h1>Surgical Logger</h1>
+ <form id="logForm">
+ <label for="date">Date:</label>
+ <input type="date" id="date" name="date" required>
 
-        <!-- Test Button -->
-        <button id="testButton" style="position: fixed; top: 10px; right: 10px; z-index: 1000;">Test Excel Write</button>
+ <label for="age">Age:</label>
+ <input type="number" id="age" name="age" required>
 
-        <div id="main-content">
-            <!-- Step 1: Patient MRN -->
-            <div id="section1" class="form-section active-section">
-                <h2>Step 1: Patient Medical Record Number</h2>
-                <div class="ms-TextField">
-                    <label class="ms-Label" for="mrn">MRN:</label>
-                    <input class="ms-TextField-field" type="text" id="mrn" placeholder="Enter MRN">
-                    <span id="mrnError" class="error-message"></span>
-                </div>
-                <div class="navigation-buttons">
-                    <button id="nextBtn1" class="ms-Button ms-Button--primary">Next</button>
-                </div>
-            </div>
+ <label for="sex">Sex:</label>
+ <select id="sex" name="sex" required>
+ <option value="Male">Male</option>
+ <option value="Female">Female</option>
+ </select>
 
-            <!-- Step 2: Patient Age -->
-            <div id="section2" class="form-section">
-                <h2>Step 2: Patient Age</h2>
-                <div class="ms-TextField">
-                    <label class="ms-Label" for="age">Age:</label>
-                    <input class="ms-TextField-field" type="number" id="age" placeholder="Enter Age">
-                    <span id="ageError" class="error-message"></span>
-                </div>
-                <div class="navigation-buttons">
-                    <button id="backBtn2" class="ms-Button">Back</button>
-                    <button id="nextBtn2" class="ms-Button ms-Button--primary">Next</button>
-                </div>
-            </div>
+ <label for="mrn">MRN:</label>
+ <input type="text" id="mrn" name="mrn" required>
 
-            <!-- Step 3: Patient Sex -->
-            <div id="section3" class="form-section">
-                <h2>Step 3: Patient Sex</h2>
-                <div class="ms-ChoiceFieldGroup" role="radiogroup" aria-labelledby="sexLabel">
-                    <label id="sexLabel" class="ms-Label">Sex:</label>
-                    <ul class="ms-ChoiceFieldGroup-list">
-                        <li class="ms-RadioButton">
-                            <input type="radio" class="ms-RadioButton-input" name="sex" id="sexMale" value="Male">
-                            <label role="radio" class="ms-RadioButton-field" for="sexMale">
-                                <span class="ms-Label">Male</span>
-                            </label>
-                        </li>
-                        <li class="ms-RadioButton">
-                            <input type="radio" class="ms-RadioButton-input" name="sex" id="sexFemale" value="Female">
-                            <label role="radio" class="ms-RadioButton-field" for="sexFemale">
-                                <span class="ms-Label">Female</span>
-                            </label>
-                        </li>
-                    </ul>
-                    <span id="sexError" class="error-message"></span>
-                </div>
-                <div class="navigation-buttons">
-                    <button id="backBtn3" class="ms-Button">Back</button>
-                    <button id="nextBtn3" class="ms-Button ms-Button--primary">Next</button>
-                </div>
-            </div>
+ <label for="diagnosis">Diagnosis:</label>
+ <input type="text" id="diagnosis" name="diagnosis" required>
 
-            <!-- Step 4: Diagnosis & Procedure -->
-            <div id="section4" class="form-section">
-                <h2>Step 4: Diagnosis & Procedure</h2>
-                <div class="ms-TextField">
-                    <label class="ms-Label" for="diagnosis">Diagnosis:</label>
-                    <input class="ms-TextField-field" type="text" id="diagnosis" placeholder="Enter Diagnosis">
-                    <span id="diagnosisError" class="error-message"></span>
-                </div>
-                <div class="ms-TextField">
-                    <label class="ms-Label" for="procedure">Procedure:</label>
-                    <input class="ms-TextField-field" type="text" id="procedure" placeholder="Enter Procedure">
-                    <span id="procedureError" class="error-message"></span>
-                </div>
-                <div class="navigation-buttons">
-                    <button id="backBtn4" class="ms-Button">Back</button>
-                    <button id="nextBtn4" class="ms-Button ms-Button--primary">Next</button>
-                </div>
-            </div>
+ <label for="procedure">Procedure:</label>
+ <input type="text" id="procedure" name="procedure" required>
 
-            <!-- Step 5: Attendants -->
-            <div id="section5" class="form-section">
-                <h2>Step 5: Attendants</h2>
-                <div id="attendantsContainer">
-                    <!-- Attendant checkboxes will be populated here -->
-                </div>
-                <div class="ms-ChoiceFieldGroup" role="radiogroup" aria-labelledby="electiveLabel">
-                    <label id="electiveLabel" class="ms-Label">Elective/Emergency:</label>
-                    <ul class="ms-ChoiceFieldGroup-list">
-                        <li class="ms-RadioButton">
-                            <input type="radio" class="ms-RadioButton-input" name="elective_emergency" id="elective" value="Elective" checked>
-                            <label role="radio" class="ms-RadioButton-field" for="elective">
-                                <span class="ms-Label">Elective</span>
-                            </label>
-                        </li>
-                        <li class="ms-RadioButton">
-                            <input type="radio" class="ms-RadioButton-input" name="elective_emergency" id="emergency" value="Emergency">
-                            <label role="radio" class="ms-RadioButton-field" for="emergency">
-                                <span class="ms-Label">Emergency</span>
-                            </label>
-                        </li>
-                    </ul>
-                </div>
-                <div class="ms-TextField">
-                    <label class="ms-Label" for="role">Role:</label>
-                    <select id="role" class="ms-Dropdown-select">
-                        <option value="Primary Surgeon">Primary Surgeon</option>
-                        <option value="Assistant">Assistant</option>
-                        <option value="Observer">Observer</option>
-                    </select>
-                </div>
-                <div class="navigation-buttons">
-                    <button id="backBtn5" class="ms-Button">Back</button>
-                    <button id="nextBtn5" class="ms-Button ms-Button--primary">Next</button>
-                </div>
-            </div>
+ <label for="attendant">Attendant:</label>
+ <select id="attendant" name="attendant" required>
+ <!-- Attendant names will be dynamically populated from AA.xlsx -->
+ </select>
 
-            <!-- Step 6: Summary -->
-            <div id="section6" class="form-section">
-                <h2>Step 6: Review Summary</h2>
-                <div id="summaryContent">
-                    <!-- Summary will be populated here -->
-                </div>
-                <div class="navigation-buttons">
-                    <button id="backBtn6" class="ms-Button">Back</button>
-                    <button id="submitBtn" class="ms-Button ms-Button--primary">Submit Log</button>
-                </div>
-            </div>
-        </div>
+ <label for="role">Role in Surgery:</label>
+ <select id="role" name="role" required>
+ <option value="Primary Assistant">Primary Assistant</option>
+ <option value="Observer">Observer</option>
+ </select>
 
-        <!-- Success Message -->
-        <div id="success" class="form-section">
-            <div class="success-message">
-                <div class="success-icon">✓</div>
-                <h2>Log Submitted Successfully!</h2>
-                <p>Your surgical log has been added to the Excel sheet.</p>
-                <button id="newLogBtn" class="ms-Button ms-Button--primary">Start New Log</button>
-            </div>
-        </div>
-    </div>
+ <label for="surgeryType">Type of Surgery:</label>
+ <select id="surgeryType" name="surgeryType" required>
+ <option value="Emergency">Emergency</option>
+ <option value="Elective">Elective</option>
+ </select>
 
-    <script>
-        (function () {
-            "use strict";
+ <button type="submit">Log Data</button>
+ </form>
 
-            let currentSection = 1;
-            const totalSections = 6;
-            const attendants = [
-                "Attending Surgeon",
-                "Fellow",
-                "Chief Resident",
-                "Senior Resident",
-                "Junior Resident",
-                "Intern",
-                "Medical Student",
-                "Anesthesiologist",
-                "Anesthesia Resident",
-                "Scrub Nurse",
-                "Circulating Nurse",
-                "Other"
-            ];
-
-            // Test Button
-            document.getElementById('testButton').addEventListener('click', async () => {
-                try {
-                    await Excel.run(async (context) => {
-                        const sheet = context.workbook.worksheets.getActiveWorksheet();
-                        const range = sheet.getRange('A1');
-                        range.values = [["Test Value"]];
-                        await context.sync();
-                        alert('Successfully wrote to Excel!');
-                    });
-                } catch (error) {
-                    console.error('Excel write failed:', error);
-                    alert('Failed to write to Excel. Check console for details.');
-                }
-            });
-
-            // Initialize app
-            async function initializeApp() {
-                try {
-                    await Excel.run(async (context) => {
-                        console.log("Excel is ready");
-                    });
-
-                    await ensureHeaders();
-                    populateAttendants();
-                    setupNavigation();
-                    showSection(1);
-                } catch (error) {
-                    console.error("Initialization failed:", error);
-                    displayError("Failed to initialize. Please reload.");
-                }
-            }
-
-            // Populate attendants
-            function populateAttendants() {
-                const container = document.getElementById('attendantsContainer');
-                if (!container) return;
-
-                container.innerHTML = '<label class="ms-Label">Attendants Present:</label>';
-                attendants.forEach((attendant, index) => {
-                    const checkboxId = `attendant_${index}`;
-                    const div = document.createElement('div');
-                    div.className = 'ms-CheckBox';
-
-                    const input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.className = 'ms-CheckBox-input';
-                    input.id = checkboxId;
-                    input.value = attendant;
-                    input.name = 'attendants';
-
-                    const label = document.createElement('label');
-                    label.className = 'ms-CheckBox-field';
-                    label.htmlFor = checkboxId;
-
-                    const labelSpan = document.createElement('span');
-                    labelSpan.className = 'ms-Label';
-                    labelSpan.textContent = attendant;
-
-                    label.appendChild(labelSpan);
-                    div.appendChild(input);
-                    div.appendChild(label);
-                    container.appendChild(div);
-                });
-            }
-
-            // Setup navigation
-            function setupNavigation() {
-                // Add event listeners for navigation buttons
-                document.getElementById("nextBtn1")?.addEventListener("click", () => {
-                    if (validateSection1()) showSection(currentSection + 1);
-                });
-                document.getElementById("backBtn2")?.addEventListener("click", () => showSection(currentSection - 1));
-                document.getElementById("nextBtn2")?.addEventListener("click", () => {
-                    if (validateSection2()) showSection(currentSection + 1);
-                });
-                document.getElementById("backBtn3")?.addEventListener("click", () => showSection(currentSection - 1));
-                document.getElementById("nextBtn3")?.addEventListener("click", () => {
-                    if (validateSection3()) showSection(currentSection + 1);
-                });
-                document.getElementById("backBtn4")?.addEventListener("click", () => showSection(currentSection - 1));
-                document.getElementById("nextBtn4")?.addEventListener("click", () => {
-                    if (validateSection4()) showSection(currentSection + 1);
-                });
-                document.getElementById("backBtn5")?.addEventListener("click", () => showSection(currentSection - 1));
-                document.getElementById("nextBtn5")?.addEventListener("click", () => {
-                    if (validateSection5()) {
-                        generateSummary();
-                        showSection(currentSection + 1);
-                    }
-                });
-                document.getElementById("backBtn6")?.addEventListener("click", () => showSection(currentSection - 1));
-                document.getElementById("submitBtn")?.addEventListener("click", async () => {
-                    try {
-                        await saveEntry();
-                        showSection('success');
-                    } catch (error) {
-                        console.error("Failed to save entry:", error);
-                        displayError("Error saving log. Please try again.");
-                    }
-                });
-                document.getElementById("newLogBtn")?.addEventListener("click", () => {
-                    resetForm();
-                    showSection(1);
-                });
-            }
-
-            // Validation functions
-            function validateSection1() {
-                const mrn = document.getElementById('mrn').value.trim();
-                const error = document.getElementById('mrnError');
-                if (!mrn) {
-                    error.textContent = "MRN is required.";
-                    return false;
-                }
-                error.textContent = "";
-                return true;
-            }
-
-            function validateSection2() {
-                const age = document.getElementById('age').value;
-                const error = document.getElementById('ageError');
-                if (!age || isNaN(age) || parseInt(age) <= 0) {
-                    error.textContent = "Please enter a valid age.";
-                    return false;
-                }
-                error.textContent = "";
-                return true;
-            }
-
-            function validateSection3() {
-                const selected = document.querySelector('input[name="sex"]:checked');
-                const error = document.getElementById('sexError');
-                if (!selected) {
-                    error.textContent = "Please select a sex.";
-                    return false;
-                }
-                error.textContent = "";
-                return true;
-            }
-
-            function validateSection4() {
-                const diagnosis = document.getElementById('diagnosis').value.trim();
-                const procedure = document.getElementById('procedure').value.trim();
-                const diagnosisError = document.getElementById('diagnosisError');
-                const procedureError = document.getElementById('procedureError');
-
-                let isValid = true;
-                if (!diagnosis) {
-                    diagnosisError.textContent = "Diagnosis is required.";
-                    isValid = false;
-                } else {
-                    diagnosisError.textContent = "";
-                }
-
-                if (!procedure) {
-                    procedureError.textContent = "Procedure is required.";
-                    isValid = false;
-                } else {
-                    procedureError.textContent = "";
-                }
-
-                return isValid;
-            }
-
-            function validateSection5() {
-                return true;
-            }
-
-            function generateSummary() {
-                const content = document.getElementById('summaryContent');
-                if (!content) return;
-
-                const data = {
-                    date: new Date().toLocaleDateString(),
-                    mrn: document.getElementById('mrn').value || 'N/A',
-                    age: document.getElementById('age').value || 'N/A',
-                    sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
-                    diagnosis: document.getElementById('diagnosis').value || 'N/A',
-                    procedure: document.getElementById('procedure').value || 'N/A',
-                    attendants: Array.from(document.querySelectorAll('input[name="attendants"]:checked'))
-                        .map(cb => cb.value).join(', ') || 'None',
-                    type: document.querySelector('input[name="elective_emergency"]:checked')?.value || 'N/A',
-                    role: document.getElementById('role').value || 'N/A'
-                };
-
-                content.innerHTML = `
-                    <p><strong>Date:</strong> ${data.date}</p>
-                    <p><strong>MRN:</strong> ${data.mrn}</p>
-                    <p><strong>Age:</strong> ${data.age}</p>
-                    <p><strong>Sex:</strong> ${data.sex}</p>
-                    <p><strong>Diagnosis:</strong> ${data.diagnosis}</p>
-                    <p><strong>Procedure:</strong> ${data.procedure}</p>
-                    <p><strong>Attendants:</strong> ${data.attendants}</p>
-                    <p><strong>Type:</strong> ${data.type}</p>
-                    <p><strong>Role:</strong> ${data.role}</p>
-                `;
-            }
-
-            function updateProgressBar(sectionNumber) {
-                const progressBar = document.getElementById('progressBar');
-                if (!progressBar) return;
-
-                if (typeof sectionNumber === 'number' && sectionNumber >= 1 && sectionNumber <= totalSections) {
-                    const progress = (sectionNumber / totalSections) * 100;
-                    progressBar.style.width = `${progress}%`;
-                } else if (sectionNumber === 'success') {
-                    progressBar.style.width = '100%';
-                } else {
-                    progressBar.style.width = '0%';
-                }
-            }
-
-            function showSection(sectionNumber) {
-                displayError("");
-
-                // Hide all sections
-                document.querySelectorAll('.form-section').forEach(section => {
-                    section.style.display = 'none';
-                    section.classList.remove('active-section');
-                });
-
-                // Handle success screen
-                if (sectionNumber === 'success') {
-                    const successSection = document.getElementById('success');
-                    if (successSection) {
-                        successSection.style.display = 'block';
-                        successSection.classList.add('active-section');
-                        currentSection = 'success';
-                        updateProgressBar('success');
-                    }
-                    return;
-                }
-
-                // Handle regular sections
-                if (typeof sectionNumber === 'number' && sectionNumber >= 1 && sectionNumber <= totalSections) {
-                    const section = document.getElementById(`section${sectionNumber}`);
-                    if (section) {
-                        section.style.display = 'block';
-                        section.classList.add('active-section');
-                        currentSection = sectionNumber;
-                        updateProgressBar(currentSection);
-                    } else {
-                        console.error(`Section element section${sectionNumber} not found.`);
-                        displayError("Error: UI element missing.");
-                        showSection(1);
-                    }
-                } else {
-                    console.warn(`Invalid section number: ${sectionNumber}. Resetting to section 1.`);
-                    showSection(1);
-                }
-            }
-
-            function resetForm() {
-                document.getElementById('mrn').value = '';
-                document.getElementById('age').value = '';
-                document.querySelector('input[name="sex"]:checked')?.checked = false;
-                document.getElementById('diagnosis').value = '';
-                document.getElementById('procedure').value = '';
-                document.querySelectorAll('input[name="attendants"]:checked')
-                    .forEach(cb => cb.checked = false);
-                document.getElementById('elective').checked = true;
-                document.getElementById('role').value = 'Primary Surgeon';
-                document.getElementById('summaryContent').innerHTML = '';
-
-                // Clear all error messages
-                document.querySelectorAll('.error-message').forEach(span => span.textContent = '');
-
-                // Reset progress bar
-                updateProgressBar(0);
-            }
-
-            async function ensureHeaders() {
-                try {
-                    await Excel.run(async (context) => {
-                        const sheet = context.workbook.worksheets.getActiveWorksheet();
-                        const range = sheet.getRange("A1:I1");
-                        range.load("values");
-                        await context.sync();
-
-                        const headers = ["Date", "MRN", "Age", "Sex", "Diagnosis", "Procedure", "Attendants", "Elective/Emergency", "Role"];
-                        
-                        if (!range.values[0] || range.values[0].some((value, index) => value !== headers[index])) {
-                            range.values = [headers];
-                            range.format.font.bold = true;
-                            range.format.fill.color = "#D3D3D3";
-                            sheet.getUsedRange().format.autofitColumns();
-                            await context.sync();
-                        }
-                    });
-                } catch (error) {
-                    console.error("Excel error in ensureHeaders:", error);
-                    throw error;
-                }
-            }
-
-            async function saveEntry() {
-                try {
-                    await Excel.run(async (context) => {
-                        const sheet = context.workbook.worksheets.getActiveWorksheet();
-                        const usedRange = sheet.getUsedRange(true);
-                        usedRange.load("rowCount");
-                        await context.sync();
-
-                        const nextRow = usedRange.rowCount + 1;
-                        const targetRange = sheet.getRange(`A${nextRow}:I${nextRow}`);
-
-                        const data = {
-                            date: new Date().toLocaleDateString(),
-                            mrn: document.getElementById('mrn').value || 'N/A',
-                            age: document.getElementById('age').value || 'N/A',
-                            sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
-                            diagnosis: document.getElementById('diagnosis').value || 'N/A',
-                            procedure: document.getElementById('procedure').value || 'N/A',
-                            attendants: Array.from(document.querySelectorAll('input[name="attendants"]:checked'))
-                                .map(cb => cb.value).join(', ') || 'None',
-                            type: document.querySelector('input[name="elective_emergency"]:checked')?.value || 'N/A',
-                            role: document.getElementById('role').value || 'N/A'
-                        };
-
-                        targetRange.values = [[
-                            data.date,
-                            data.mrn,
-                            data.age,
-                            data.sex,
-                            data.diagnosis,
-                            data.procedure,
-                            data.attendants,
-                            data.type,
-                            data.role
-                        ]];
-
-                        targetRange.format.autofitColumns();
-                        await context.sync();
-                    });
-                } catch (error) {
-                    console.error("Excel error in saveEntry:", error);
-                    throw error;
-                }
-            }
-
-            function displayError(message) {
-                const errorDisplay = document.getElementById('errorDisplay');
-                if (errorDisplay) {
-                    errorDisplay.textContent = message;
-                }
-            }
-
-            // Initialize when Office is ready
-            Office.onReady(function(info) {
-                if (document.readyState === "complete" || document.readyState === "interactive") {
-                    initializeApp();
-                } else {
-                    document.addEventListener('DOMContentLoaded', initializeApp);
-                }
-            });
-        })();
-    </script>
+ <script>
+ // JavaScript to handle form submission and log data into Excel
+ document.getElementById('logForm').addEventListener('submit', function(event) {
+ event.preventDefault();
+ const formData = new FormData(event.target);
+ const data = Object.fromEntries(formData.entries());
+ // TODO: Add logic to log data into Excel
+ console.log(data);
+ alert('Data logged successfully!');
+ });
+ </script>
 </body>
 </html>
