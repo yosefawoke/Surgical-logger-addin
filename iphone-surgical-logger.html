@@ -604,30 +604,44 @@
             }
 
             async function saveEntry() {
-                console.log("Saving entry...");
+                console.log("Starting saveEntry...");
                 try {
+                    // First, let's verify we can access Excel
                     await Excel.run(async (context) => {
+                        console.log("Excel context ready.");
+                        
+                        // Get active worksheet
                         const sheet = context.workbook.worksheets.getActiveWorksheet();
+                        
+                        // Get used range to find next row
                         const usedRange = sheet.getUsedRange(true);
                         usedRange.load("rowCount");
                         await context.sync();
-
+                        
+                        // Calculate next row
                         const nextRow = usedRange.rowCount + 1;
+                        console.log(`Next row to write: ${nextRow}`);
+                        
+                        // Get target range (A to I columns)
                         const targetRange = sheet.getRange(`A${nextRow}:I${nextRow}`);
-
+                        
+                        // Collect all form data
                         const data = {
                             date: new Date().toLocaleDateString(),
-                            mrn: document.getElementById('mrn').value.trim(),
-                            age: document.getElementById('age').value.trim(),
+                            mrn: document.getElementById('mrn').value.trim() || 'N/A',
+                            age: document.getElementById('age').value.trim() || 'N/A',
                             sex: document.querySelector('input[name="sex"]:checked')?.value || 'N/A',
-                            diagnosis: document.getElementById('diagnosis').value.trim(),
-                            procedure: document.getElementById('procedure').value.trim(),
+                            diagnosis: document.getElementById('diagnosis').value.trim() || 'N/A',
+                            procedure: document.getElementById('procedure').value.trim() || 'N/A',
                             attendants: Array.from(document.querySelectorAll('input[name="attendants"]:checked'))
                                 .map(cb => cb.value).join(', ') || 'None',
                             type: document.querySelector('input[name="elective_emergency"]:checked')?.value || 'N/A',
                             role: document.getElementById('role').value || 'N/A'
                         };
-
+                        
+                        console.log("Data to save:", data);
+                        
+                        // Set values in target range
                         targetRange.values = [[
                             data.date,
                             data.mrn,
@@ -639,15 +653,27 @@
                             data.type,
                             data.role
                         ]];
-
+                        
                         // Format the row
                         targetRange.format.autofitColumns();
+                        
+                        // Load values to verify
+                        targetRange.load("values");
                         await context.sync();
-                        console.log("Entry saved successfully.");
+                        
+                        console.log("Entry saved successfully. Values in Excel:", targetRange.values);
                     });
+                    
+                    // Show success message after successful save
+                    showSection('success');
                 } catch (error) {
                     console.error("Excel error in saveEntry:", error);
-                    throw error;
+                    if (error instanceof OfficeExtension.Error) {
+                        console.error("Excel error details:", error.debugInfo);
+                        displayError(`Excel error: ${error.message}`);
+                    } else {
+                        displayError("Error saving log. Please try again.");
+                    }
                 }
             }
 
